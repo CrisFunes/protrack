@@ -10,10 +10,8 @@ import Calendar from './pages/Calendar';
 import Reports from './pages/Reports';
 import Integrations from './pages/Integrations';
 import Settings from './pages/Settings';
+import theme from './utils/theme';
 
-const theme = createTheme({
-  // Puedes personalizar tu tema aquí
-});
 
 function App() {
   return (
