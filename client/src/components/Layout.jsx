@@ -18,6 +18,9 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo.svg';
+import SettingsIcon from '@mui/icons-material/Settings';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import { Button } from '@mui/material';
 
 const drawerWidth = 240;
 
@@ -80,7 +83,12 @@ const Layout = ({ children }) => {
           <Typography variant="logo" noWrap component="div" paddingLeft="10px">
             ProTrack
           </Typography>
-          {/* Add Notifications and Settings icons here */}
+          <Box sx={{ marginLeft: 'auto', display: 'flex', gap: '10px' }} >
+            <Button variant="contained" startIcon={<NotificationsIcon />} 
+            size='small' color='primary'>Notifications</Button>
+            <Button variant="contained" startIcon={<SettingsIcon />} 
+            size='small' color='primary' component={Link} to={'/settings'}>Settings</Button>
+          </Box>
         </Toolbar>
       </Header>
       <NavBar variant="permanent">
