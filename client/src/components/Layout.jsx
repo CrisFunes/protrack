@@ -20,7 +20,12 @@ import { Link } from 'react-router-dom';
 import logo from '../assets/logo.svg';
 import SettingsIcon from '@mui/icons-material/Settings';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import { Button } from '@mui/material';
+import Button from '@mui/material/Button';
+import ButtonGroup from '@mui/material/ButtonGroup';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import TwitterIcon from '@mui/icons-material/Twitter';
+import IconButton from '@mui/material/IconButton';
+import FacebookOutlinedIcon from '@mui/icons-material/FacebookOutlined';
 
 const drawerWidth = 240;
 
@@ -87,7 +92,7 @@ const Layout = ({ children }) => {
             <Button variant="contained" startIcon={<NotificationsIcon />} 
             size='small' color='primary'>Notifications</Button>
             <Button variant="contained" startIcon={<SettingsIcon />} 
-            size='small' color='primary' component={Link} to={'/settings'}>Settings</Button>
+            size='small' component={Link} to={'/settings'} sx={{ background: '#22C55E' }}>Settings</Button>
           </Box>
         </Toolbar>
       </Header>
@@ -112,9 +117,19 @@ const Layout = ({ children }) => {
         </Content>
       </Box>
       <Footer>
-        <Typography variant="body2">
-          ProTrack | About Us | Contact | © 2024 Projectify
-        </Typography>
+        <ButtonGroup variant="body2">
+          <Button sx={{ textTransform: 'capitalize' }}>About Us</Button>
+          <Button sx={{ textTransform: 'capitalize' }}>Contact</Button>
+        </ButtonGroup>
+        <IconButton aria-label="instagram contact">
+          <InstagramIcon />
+        </IconButton>
+        <IconButton aria-label="twitter contact">
+          <TwitterIcon />
+        </IconButton>
+        <IconButton aria-label="facebook contact">
+          <FacebookOutlinedIcon />
+        </IconButton>
       </Footer>
     </Root>
   );
