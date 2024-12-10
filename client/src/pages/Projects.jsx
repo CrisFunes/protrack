@@ -3,24 +3,29 @@ import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import CircularProgress from '@mui/material/CircularProgress';  // Para mostrar un spinner de carga
+import CircularProgress from '@mui/material/CircularProgress'; // Spinner de carga
+import Avatar from '@mui/material/Avatar'; // Componente para mostrar avatar
 
 const Projects = () => {
-  const [projects, setProjects] = useState([]);        // Estado para los proyectos
-  const [loading, setLoading] = useState(true);        // Estado para mostrar el spinner de carga
-  const [error, setError] = useState(null);            // Estado para manejar errores
+  const [projects, setProjects] = useState([]); // Estado para los proyectos
+  const [loading, setLoading] = useState(true); // Estado de carga
+  const [error, setError] = useState(null); // Estado de errores
 
-  // useEffect para hacer la petición a la API cuando el componente se monta
+  // useEffect para hacer la petición a la API
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await fetch('https://3000-idx-protrack-1726518802694.cluster-m7tpz3bmgjgoqrktlvd4ykrc2m.cloudworkstations.dev/api/jira/projects', {
-          credentials: 'include', // Esto envía cookies con la solicitud
-        });
+        const response = await fetch(
+          'https://3000-idx-protrack-1726518802694.cluster-m7tpz3bmgjgoqrktlvd4ykrc2m.cloudworkstations.dev/api/jira/projects',
+          {
+            credentials: 'include', // Incluir cookies
+          }
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+        console.log('Jira API Response:', data); // Log para analizar datos
         setProjects(data);
         setLoading(false);
       } catch (error) {
@@ -29,16 +34,20 @@ const Projects = () => {
         setLoading(false);
       }
     };
-  
+
     fetchProjects();
   }, []);
-  
-  // Mostrar un mensaje de error si la API falla
+
+  // Manejo de errores
   if (error) {
-    return <Typography variant="h6" color="error">{error}</Typography>;
+    return (
+      <Typography variant="h6" color="error">
+        {error}
+      </Typography>
+    );
   }
 
-  // Mostrar un spinner de carga mientras se están obteniendo los datos
+  // Mostrar spinner mientras se cargan los datos
   if (loading) {
     return <CircularProgress />;
   }
@@ -53,9 +62,27 @@ const Projects = () => {
           <Grid item xs={12} sm={6} md={4} key={project.id}>
             <Card>
               <CardContent>
-                <Typography variant="h6">{project.name}</Typography>
+                <Grid container alignItems="center" spacing={2}>
+                  {/* Mostrar el avatar del proyecto */}
+                  <Grid item>
+                    <Avatar
+                      alt={project.name}
+                      src={project.avatarUrls['48x48']}
+                      sx={{ width: 48, height: 48 }}
+                    />
+                  </Grid>
+                  <Grid item>
+                    <Typography variant="h6">{project.name}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Key: {project.key}
+                    </Typography>
+                  </Grid>
+                </Grid>
+                <Typography variant="body2" color="text.secondary" mt={2}>
+                  Type: {project.projectTypeKey}
+                </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Status: {project.status}
+                  Private: {project.isPrivate ? 'Yes' : 'No'}
                 </Typography>
               </CardContent>
             </Card>
