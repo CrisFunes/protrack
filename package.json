@@ -10,10 +10,14 @@
     "install": "cd client && npm install && cd ../server && npm install",
     "test": "cd client && npm test && cd ../server && npm test"
   },
-  "keywords": ["project management", "dashboard", "monorepo"],
+  "keywords": [
+    "project management",
+    "dashboard",
+    "monorepo"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^8.0.1"
+    "concurrently": "^8.2.2"
   }
 }
