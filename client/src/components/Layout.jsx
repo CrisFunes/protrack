@@ -1,5 +1,6 @@
 import React from 'react';
 import { styled } from '@mui/material/styles';
+import { useLocation, Navigate, Outlet, Link } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
@@ -16,16 +17,16 @@ import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstruct
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import { Link } from 'react-router-dom';
-import logo from '../assets/logo.svg';
 import SettingsIcon from '@mui/icons-material/Settings';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import LogoutIcon from '@mui/icons-material/Logout';
 import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import IconButton from '@mui/material/IconButton';
 import FacebookOutlinedIcon from '@mui/icons-material/FacebookOutlined';
+import logo from '../assets/logo.svg';
 
 const drawerWidth = 240;
 
@@ -54,8 +55,8 @@ const NavBar = styled(Drawer)(({ theme }) => ({
 const Content = styled('main')(({ theme }) => ({
   flexGrow: 1,
   padding: theme.spacing(3),
-  paddingBottom: 64, // height of footer
-  marginTop: 64, // height of AppBar
+  paddingBottom: 64,
+  marginTop: 64,
   backgroundColor: theme.palette.secondary.main,
 }));
 
@@ -70,15 +71,28 @@ const Footer = styled('footer')(({ theme }) => ({
   zIndex: theme.zIndex.drawer + 2,
 }));
 
-const Layout = ({ children }) => {
+const Layout = () => {
+  const location = useLocation();
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'Projects', icon: <AssignmentIcon />, path: '/projects' },
     { text: 'Tasks', icon: <FormatListBulletedIcon />, path: '/tasks' },
     { text: 'Calendar', icon: <CalendarTodayIcon />, path: '/calendar' },
     { text: 'Reports', icon: <BarChartIcon />, path: '/reports' },
     { text: 'Integrations', icon: <IntegrationInstructionsIcon />, path: '/integrations' },
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/auth';
+  };
 
   return (
     <Root>
@@ -89,13 +103,37 @@ const Layout = ({ children }) => {
             ProTrack
           </Typography>
           <Box sx={{ marginLeft: 'auto', display: 'flex', gap: '10px' }} >
-            <Button variant="contained" startIcon={<NotificationsIcon />} 
-            size='small' color='primary'>Notifications</Button>
-            <Button variant="contained" startIcon={<SettingsIcon />} 
-            size='small' component={Link} to={'/settings'} sx={{ background: '#22C55E' }}>Settings</Button>
+            <Button 
+              variant="contained" 
+              startIcon={<NotificationsIcon />} 
+              size='small' 
+              color='primary'
+            >
+              Notifications
+            </Button>
+            <Button 
+              variant="contained" 
+              startIcon={<SettingsIcon />} 
+              size='small' 
+              component={Link} 
+              to={'/settings'} 
+              sx={{ background: '#22C55E' }}
+            >
+              Settings
+            </Button>
+            <Button 
+              variant="contained" 
+              startIcon={<LogoutIcon />}
+              size='small'
+              color="error"
+              onClick={handleLogout}
+            >
+              Logout
+            </Button>
           </Box>
         </Toolbar>
       </Header>
+
       <NavBar variant="permanent">
         <Toolbar />
         <List>
@@ -111,11 +149,13 @@ const Layout = ({ children }) => {
           ))}
         </List>
       </NavBar>
+
       <Box component="div" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         <Content>
-          {children}
+          <Outlet />
         </Content>
       </Box>
+
       <Footer>
         <ButtonGroup variant="body2">
           <Button sx={{ textTransform: 'capitalize' }}>About Us</Button>
