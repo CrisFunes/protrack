@@ -3,16 +3,42 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const mongoose = require('mongoose');
-
+const cors = require('cors');
+const authRoutes = require('./routes/auth'); // Necesitarás crear este archivo
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Configurar middleware
+app.use(express.json()); // Para parsear JSON
+app.use(express.urlencoded({ extended: true })); // Para parsear URL-encoded bodies
+app.use(cors({
+  origin: '*', // URL de tu aplicación Vite
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
+// Asegúrate de que esto esté antes de tus rutas
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use((req, res, next) => {
+  console.log('Incoming request:', {
+    method: req.method,
+    path: req.path,
+    body: req.body,
+    headers: req.headers
+  });
+  next();
+});
 
 // Jira credentials from .env file
 const jiraBaseUrl = process.env.JIRA_BASE_URL;
 const jiraEmail = process.env.JIRA_EMAIL;
 const jiraToken = process.env.JIRA_API_TOKEN;
 
+// Conexión a MongoDB
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
@@ -28,6 +54,7 @@ const connectDB = async () => {
 
 connectDB();
 
+// Middleware de manejo de errores
 const errorHandler = (err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ 
@@ -36,16 +63,15 @@ const errorHandler = (err, req, res, next) => {
   });
 };
 
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://localhost:27017');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  next();
+// Rutas
+app.use('/api/auth', authRoutes); // Rutas de autenticación
+
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working' });
 });
 
 app.get('/api/test-db', async (req, res, next) => {
   try {
-    // Verifica si mongoose está conectado
     const dbStatus = mongoose.connection.readyState;
     const status = {
       isConnected: dbStatus === 1,
@@ -58,7 +84,7 @@ app.get('/api/test-db', async (req, res, next) => {
 });
 
 app.get('/', (req, res) => {
-  res.send('Hello from ProTrack Serverrr!');
+  res.send('Hello from ProTrack Server!');
 });
 
 app.get('/api/jira/projects', async (req, res) => {
@@ -69,22 +95,23 @@ app.get('/api/jira/projects', async (req, res) => {
                 password: jiraToken,
             },
         });
-        res.json(response.data); // Send response back to frontend
+        res.json(response.data);
     } catch (error) {
-        console.error('Error fetching Jira projects:', error.message); // Log detailed error message
+        console.error('Error fetching Jira projects:', error.message);
         res.status(500).json({ error: error.message });
     }
 });
 
+// Middleware de error al final
 app.use(errorHandler);
 
+// Manejo de promesas no controladas
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Promise Rejection:', err);
-  // Close server & exit process
-  app.close(() => process.exit(1));
+  server.close(() => process.exit(1));
 });
 
-
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+
