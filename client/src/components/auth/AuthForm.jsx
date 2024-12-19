@@ -1,6 +1,19 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  Container,
+  Link
+} from '@mui/material';
+import LoginIcon from '@mui/icons-material/Login';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
 const AuthForm = () => {
   const navigate = useNavigate();
@@ -36,114 +49,171 @@ const AuthForm = () => {
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        
-        // Redirige a la página intentada originalmente o al dashboard
         navigate(from, { replace: true });
       }
     } catch (err) {
-      console.error('Error completo:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status,
-        error: err
-      });
-      
-      setError(
-        err.response?.data?.message || 
-        'Error al conectar con el servidor'
-      );
+      setError(err.response?.data?.message || 'Error al conectar con el servidor');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <h2 className="text-2xl font-bold mb-6 text-center">
-            {isLogin ? 'Welcome Back' : 'Create Account'}
-          </h2>
+    <Box 
+      className="min-h-screen bg-gray-50"
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        pt: 8, // Espacio superior para el logo
+        pb: 8  // Espacio inferior
+      }}
+    >
+      {/* Logo y nombre de la plataforma */}
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          mb: 6 
+        }}
+      >
+        <img 
+          src="src/assets/logo.svg" 
+          alt="ProTrack Logo" 
+          style={{ height: '80px' }}
+        />
+        <Typography 
+          variant="h3" 
+          component="div" 
+          sx={{ 
+            ml: 2,
+            fontWeight: 'bold',
+          }}
+        >
+          ProTrack
+        </Typography>
+      </Box>
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-              {error}
-            </div>
-          )}
+      <Container maxWidth="sm">
+        <Card 
+          elevation={4}
+          sx={{ 
+            borderRadius: 2,
+            overflow: 'visible'
+          }}
+        >
+          <CardContent sx={{ p: 4 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center',
+              mb: 4
+            }}>
+              {isLogin ? (
+                <LoginIcon sx={{ fontSize: 48 }} color="primary" />
+              ) : (
+                <PersonAddIcon sx={{ fontSize: 48 }} color="primary" />
+              )}
+              <Typography 
+                variant="h4" 
+                component="h1" 
+                sx={{ 
+                  mt: 2,
+                  fontWeight: 500
+                }}
+              >
+                {isLogin ? 'Welcome Back' : 'Create Account'}
+              </Typography>
+            </Box>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </>
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+            <form onSubmit={handleSubmit}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {!isLogin && (
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <TextField
+                      fullWidth
+                      label="First Name"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                      variant="outlined"
+                    />
+                    <TextField
+                      fullWidth
+                      label="Last Name"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                      variant="outlined"
+                    />
+                  </Box>
+                )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  variant="outlined"
+                />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full p-2 text-white bg-blue-500 rounded hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? 'Loading...' : (isLogin ? 'Login' : 'Register')}
-            </button>
-          </form>
+                <TextField
+                  fullWidth
+                  label="Password"
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  variant="outlined"
+                />
 
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="w-full text-center mt-4 text-blue-500 hover:text-blue-600"
-          >
-            {isLogin ? 'Need an account? Register' : 'Already have an account? Login'}
-          </button>
-        </div>
-      </div>
-    </div>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  sx={{ mt: 2 }}
+                >
+                  {loading ? (
+                    <Box className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Loading...
+                    </Box>
+                  ) : (
+                    isLogin ? 'Login' : 'Register'
+                  )}
+                </Button>
+              </Box>
+            </form>
+
+            <Box sx={{ textAlign: 'center', mt: 3 }}>
+              <Link
+                component="button"
+                variant="body2"
+                onClick={() => setIsLogin(!isLogin)}
+                sx={{
+                  color: 'primary.main',
+                  '&:hover': {
+                    textDecoration: 'underline'
+                  }
+                }}
+              >
+                {isLogin 
+                  ? "Don't have an account? Register" 
+                  : 'Already have an account? Login'}
+              </Link>
+            </Box>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   );
 };
 
