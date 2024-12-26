@@ -32,9 +32,12 @@ const Integrations = () => {
 
   const fetchIntegrationStatus = async () => {
     try {
-      const token = localStorage.getItem('token'); // O como manejes el token de autenticación
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+  
       const response = await fetch('/api/integrations/status', {
-        credentials: 'include',
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -47,7 +50,7 @@ const Integrations = () => {
       const data = await response.json();
       updateIntegrationsStatus(data);
     } catch (err) {
-      setError('Failed to load integrations status');
+      setError(err.message || 'Failed to load integrations status');
       console.error('Error fetching integrations:', err);
     } finally {
       setLoading(false);
@@ -65,15 +68,18 @@ const Integrations = () => {
   };
 
   const handleIntegrationToggle = async (integrationId) => {
-    const token = localStorage.getItem('token');
-    const integration = integrations.find(i => i.id === integrationId);
-    if (!integration) return;
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
   
-    if (integration.connected) {
-      try {
+      const integration = integrations.find(i => i.id === integrationId);
+      if (!integration) return;
+  
+      if (integration.connected) {
         const response = await fetch(`/api/integrations/${integrationId}/disconnect`, {
           method: 'POST',
-          credentials: 'include',
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -84,17 +90,17 @@ const Integrations = () => {
         }
   
         updateIntegrationStatus(integrationId, false);
-      } catch (err) {
-        setError(`Failed to disconnect ${integration.name}`);
-        console.error(`Error disconnecting ${integration.name}:`, err);
+      } else {
+        if (integrationId === 'jira') {
+          setJiraDialogOpen(true);
+        }
       }
-    } else {
-      if (integrationId === 'jira') {
-        setJiraDialogOpen(true);
-      }
+    } catch (err) {
+      setError(err.message);
+      console.error('Error toggling integration:', err);
     }
   };
-  
+    
 
   const handleRefresh = async (integrationId) => {
     setRefreshing(true);

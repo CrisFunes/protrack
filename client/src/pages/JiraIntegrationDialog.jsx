@@ -20,17 +20,24 @@ const JiraIntegrationDialog = ({ open, onClose, onConnect }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Obtener el token de autenticación
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
       const response = await fetch('/api/integrations/jira/connect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData),
-        credentials: 'include'
+        body: JSON.stringify(formData)
       });
 
       if (!response.ok) {
-        throw new Error('Failed to connect to Jira');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to connect to Jira');
       }
 
       const data = await response.json();
@@ -38,6 +45,7 @@ const JiraIntegrationDialog = ({ open, onClose, onConnect }) => {
       onClose();
     } catch (err) {
       setError(err.message);
+      console.error('Error connecting to Jira:', err);
     }
   };
 
@@ -52,7 +60,11 @@ const JiraIntegrationDialog = ({ open, onClose, onConnect }) => {
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Connect to Jira</DialogTitle>
       <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
         <TextField
           name="baseUrl"
           label="Jira Base URL"

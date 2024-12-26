@@ -2,8 +2,9 @@ const mongoose = require('mongoose');
 
 const integrationSchema = new mongoose.Schema({
   userId: {
-    type: String,
-    required: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true // Asegurarnos de que sea requerido
   },
   service: {
     type: String,
@@ -26,11 +27,10 @@ const integrationSchema = new mongoose.Schema({
     default: null
   }
 }, { 
-  timestamps: true,
-  collection: 'integrations'
+  timestamps: true 
 });
 
-// Índice compuesto para búsquedas eficientes
+// Índice compuesto para asegurar que no hay duplicados para el mismo usuario y servicio
 integrationSchema.index({ userId: 1, service: 1 }, { unique: true });
 
 const Integration = mongoose.model('Integration', integrationSchema);
