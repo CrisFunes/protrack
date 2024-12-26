@@ -130,4 +130,53 @@ router.post('/:service/sync', auth, async (req, res) => {
   }
 });
 
-module.exports = router;
+router.get('/jira/projects', auth, async (req, res) => {
+    try {
+      // Buscar la integración de Jira para el usuario actual
+      const integration = await Integration.findOne({
+        userId: req.user.id,
+        service: 'jira',
+        isConnected: true
+      });
+  
+      if (!integration) {
+        return res.status(404).json({ 
+          error: 'Jira integration not found',
+          message: 'Please connect your Jira account first'
+        });
+      }
+  
+      // Obtener los proyectos usando las credenciales almacenadas
+      const { baseUrl, email, apiToken } = integration.credentials;
+  
+      const response = await axios.get(`${baseUrl}/rest/api/3/project`, {
+        auth: {
+          username: email,
+          password: apiToken
+        }
+      });
+  
+      // Actualizar lastSync
+      integration.lastSync = new Date();
+      await integration.save();
+  
+      res.json(response.data);
+    } catch (error) {
+      console.error('Error fetching Jira projects:', error);
+      
+      // Manejar diferentes tipos de errores
+      if (error.response?.status === 401) {
+        return res.status(401).json({ 
+          error: 'Invalid Jira credentials',
+          message: 'Please reconnect your Jira account'
+        });
+      }
+  
+      res.status(500).json({ 
+        error: 'Failed to fetch Jira projects',
+        message: error.message
+      });
+    }
+  });
+  
+  module.exports = router;

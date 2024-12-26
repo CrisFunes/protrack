@@ -3,34 +3,51 @@ import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import CircularProgress from '@mui/material/CircularProgress'; // Spinner de carga
-import Avatar from '@mui/material/Avatar'; // Componente para mostrar avatar
+import CircularProgress from '@mui/material/CircularProgress';
+import Avatar from '@mui/material/Avatar';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import { Link } from 'react-router-dom';
 
 const Projects = () => {
-  const [projects, setProjects] = useState([]); // Estado para los proyectos
-  const [loading, setLoading] = useState(true); // Estado de carga
-  const [error, setError] = useState(null); // Estado de errores
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [hasJiraIntegration, setHasJiraIntegration] = useState(true);
 
-  // useEffect para hacer la petición a la API
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await fetch(
-          'https://3000-idx-protrack-1726518802694.cluster-m7tpz3bmgjgoqrktlvd4ykrc2m.cloudworkstations.dev/api/jira/projects',
-          {
-            credentials: 'include', // Incluir cookies
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        const response = await fetch('/api/integrations/jira/projects', {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
-        );
+        });
+
+        if (response.status === 404) {
+          setHasJiraIntegration(false);
+          setLoading(false);
+          return;
+        }
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+
         const data = await response.json();
-        console.log('Jira API Response:', data); // Log para analizar datos
+        console.log('Jira API Response:', data);
         setProjects(data);
-        setLoading(false);
+        setHasJiraIntegration(true);
       } catch (error) {
         console.error('Error fetching projects:', error);
-        setError(`Error fetching projects: ${error.message}`);
+        setError(error.message);
+      } finally {
         setLoading(false);
       }
     };
@@ -38,18 +55,42 @@ const Projects = () => {
     fetchProjects();
   }, []);
 
-  // Manejo de errores
-  if (error) {
+  if (loading) {
     return (
-      <Typography variant="h6" color="error">
-        {error}
-      </Typography>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <CircularProgress />
+      </Box>
     );
   }
 
-  // Mostrar spinner mientras se cargan los datos
-  if (loading) {
-    return <CircularProgress />;
+  if (!hasJiraIntegration) {
+    return (
+      <Box p={3}>
+        <Alert 
+          severity="info"
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              component={Link} 
+              to="/integrations"
+            >
+              Connect Jira
+            </Button>
+          }
+        >
+          Please connect your Jira account to view projects
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ m: 2 }}>
+        {error}
+      </Alert>
+    );
   }
 
   return (
@@ -63,7 +104,6 @@ const Projects = () => {
             <Card>
               <CardContent>
                 <Grid container alignItems="center" spacing={2}>
-                  {/* Mostrar el avatar del proyecto */}
                   <Grid item>
                     <Avatar
                       alt={project.name}
@@ -71,7 +111,7 @@ const Projects = () => {
                       sx={{ width: 48, height: 48 }}
                     />
                   </Grid>
-                  <Grid item>
+                  <Grid item xs>
                     <Typography variant="h6">{project.name}</Typography>
                     <Typography variant="body2" color="text.secondary">
                       Key: {project.key}
