@@ -1,52 +1,224 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import Switch from '@mui/material/Switch';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import JiraIntegrationDialog from './JiraIntegrationDialog';
+import { Box, IconButton, Tooltip } from '@mui/material';
+import { Settings, Refresh } from '@mui/icons-material';
 
 const Integrations = () => {
-  const integrations = [
-    { id: 1, name: 'Jira', connected: true },
-    { id: 2, name: 'Slack', connected: true },
-    { id: 3, name: 'Bitbucket', connected: true },
-    { id: 4, name: 'GitHub', connected: false },
-    { id: 5, name: 'Trello', connected: false },
-  ];
+  const [integrations, setIntegrations] = useState([
+    { id: 'jira', name: 'Jira', connected: false, lastSync: null },
+    { id: 'slack', name: 'Slack', connected: false, lastSync: null },
+    { id: 'bitbucket', name: 'Bitbucket', connected: false, lastSync: null },
+    { id: 'github', name: 'GitHub', connected: false, lastSync: null },
+    { id: 'trello', name: 'Trello', connected: false, lastSync: null },
+  ]);
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [jiraDialogOpen, setJiraDialogOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Cargar el estado de las integraciones al montar el componente
+  useEffect(() => {
+    fetchIntegrationStatus();
+  }, []);
+
+  const fetchIntegrationStatus = async () => {
+    try {
+      const token = localStorage.getItem('token'); // O como manejes el token de autenticación
+      const response = await fetch('/api/integrations/status', {
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch integration status');
+      }
+  
+      const data = await response.json();
+      updateIntegrationsStatus(data);
+    } catch (err) {
+      setError('Failed to load integrations status');
+      console.error('Error fetching integrations:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateIntegrationsStatus = (statusData) => {
+    setIntegrations(prevIntegrations => 
+      prevIntegrations.map(integration => ({
+        ...integration,
+        connected: statusData[integration.id]?.connected || false,
+        lastSync: statusData[integration.id]?.lastSync || null
+      }))
+    );
+  };
+
+  const handleIntegrationToggle = async (integrationId) => {
+    const token = localStorage.getItem('token');
+    const integration = integrations.find(i => i.id === integrationId);
+    if (!integration) return;
+  
+    if (integration.connected) {
+      try {
+        const response = await fetch(`/api/integrations/${integrationId}/disconnect`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+  
+        if (!response.ok) {
+          throw new Error(`Failed to disconnect ${integration.name}`);
+        }
+  
+        updateIntegrationStatus(integrationId, false);
+      } catch (err) {
+        setError(`Failed to disconnect ${integration.name}`);
+        console.error(`Error disconnecting ${integration.name}:`, err);
+      }
+    } else {
+      if (integrationId === 'jira') {
+        setJiraDialogOpen(true);
+      }
+    }
+  };
+  
+
+  const handleRefresh = async (integrationId) => {
+    setRefreshing(true);
+    try {
+      const response = await fetch(`/api/integrations/${integrationId}/sync`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to sync ${integrationId}`);
+      }
+
+      // Actualizar el lastSync para esta integración
+      const data = await response.json();
+      updateIntegrationLastSync(integrationId, data.lastSync);
+    } catch (err) {
+      setError(`Failed to sync ${integrationId}`);
+      console.error(`Error syncing ${integrationId}:`, err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const updateIntegrationStatus = (integrationId, connected, lastSync = null) => {
+    setIntegrations(prevIntegrations =>
+      prevIntegrations.map(integration =>
+        integration.id === integrationId
+          ? { ...integration, connected, lastSync: lastSync || integration.lastSync }
+          : integration
+      )
+    );
+  };
+
+  const updateIntegrationLastSync = (integrationId, lastSync) => {
+    setIntegrations(prevIntegrations =>
+      prevIntegrations.map(integration =>
+        integration.id === integrationId
+          ? { ...integration, lastSync }
+          : integration
+      )
+    );
+  };
+
+  const handleJiraConnect = async (data) => {
+    updateIntegrationStatus('jira', true, new Date());
+    setJiraDialogOpen(false);
+  };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <div>
       <Typography variant="h4" gutterBottom>
         Integrations
       </Typography>
+      
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
       <Grid container spacing={3}>
         {integrations.map((integration) => (
           <Grid item xs={12} sm={6} md={4} key={integration.id}>
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  {integration.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Typography variant="h6">
+                    {integration.name}
+                  </Typography>
+                  <Box>
+                    <Switch
+                      checked={integration.connected}
+                      onChange={() => handleIntegrationToggle(integration.id)}
+                      color="primary"
+                    />
+                    {integration.connected && (
+                      <>
+                        <Tooltip title="Sync">
+                          <IconButton 
+                            onClick={() => handleRefresh(integration.id)}
+                            disabled={refreshing}
+                          >
+                            <Refresh />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Settings">
+                          <IconButton onClick={() => handleIntegrationToggle(integration.id)}>
+                            <Settings />
+                          </IconButton>
+                        </Tooltip>
+                      </>
+                    )}
+                  </Box>
+                </Box>
+                
+                <Typography variant="body2" color="text.secondary">
                   Status: {integration.connected ? 'Connected' : 'Not Connected'}
                 </Typography>
-                <Switch
-                  checked={integration.connected}
-                  color="primary"
-                />
-                <Button 
-                  variant="outlined" 
-                  color="primary" 
-                  sx={{ ml: 2 }}
-                >
-                  {integration.connected ? 'Configure' : 'Connect'}
-                </Button>
+                
+                {integration.connected && integration.lastSync && (
+                  <Typography variant="body2" color="text.secondary">
+                    Last synced: {new Date(integration.lastSync).toLocaleString()}
+                  </Typography>
+                )}
               </CardContent>
             </Card>
           </Grid>
         ))}
       </Grid>
+
+      <JiraIntegrationDialog 
+        open={jiraDialogOpen}
+        onClose={() => setJiraDialogOpen(false)}
+        onConnect={handleJiraConnect}
+      />
     </div>
   );
 };
