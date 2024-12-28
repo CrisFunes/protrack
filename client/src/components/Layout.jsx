@@ -13,6 +13,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -82,6 +83,7 @@ const Layout = () => {
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'Projects', icon: <AssignmentIcon />, path: '/projects' },
+    { text: 'Repositories', icon: <AccountTreeIcon />, path: '/Repositories' },
     { text: 'Tasks', icon: <FormatListBulletedIcon />, path: '/tasks' },
     { text: 'Calendar', icon: <CalendarTodayIcon />, path: '/calendar' },
     { text: 'Reports', icon: <BarChartIcon />, path: '/reports' },

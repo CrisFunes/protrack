@@ -10,6 +10,8 @@ import Alert from '@mui/material/Alert';
 import JiraIntegrationDialog from './JiraIntegrationDialog';
 import { Box, IconButton, Tooltip } from '@mui/material';
 import { Settings, Refresh } from '@mui/icons-material';
+import GitHubIntegrationDialog from './GitHubIntegrationDialog';
+
 
 const Integrations = () => {
   const [integrations, setIntegrations] = useState([
@@ -24,6 +26,7 @@ const Integrations = () => {
   const [error, setError] = useState(null);
   const [jiraDialogOpen, setJiraDialogOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [githubDialogOpen, setGithubDialogOpen] = useState(false);
 
   // Cargar el estado de las integraciones al montar el componente
   useEffect(() => {
@@ -91,8 +94,15 @@ const Integrations = () => {
   
         updateIntegrationStatus(integrationId, false);
       } else {
-        if (integrationId === 'jira') {
-          setJiraDialogOpen(true);
+        // Abrir el diálogo correspondiente
+        switch (integrationId) {
+          case 'jira':
+            setJiraDialogOpen(true);
+            break;
+          case 'github':
+            setGithubDialogOpen(true);
+            break;
+          // Agregar más casos según necesites
         }
       }
     } catch (err) {
@@ -143,6 +153,11 @@ const Integrations = () => {
           : integration
       )
     );
+  };
+
+  const handleGitHubConnect = async (data) => {
+    updateIntegrationStatus('github', true, new Date());
+    setGithubDialogOpen(false);
   };
 
   const handleJiraConnect = async (data) => {
@@ -224,6 +239,11 @@ const Integrations = () => {
         open={jiraDialogOpen}
         onClose={() => setJiraDialogOpen(false)}
         onConnect={handleJiraConnect}
+      />
+      <GitHubIntegrationDialog
+        open={githubDialogOpen}
+        onClose={() => setGithubDialogOpen(false)}
+        onConnect={handleGitHubConnect}
       />
     </div>
   );

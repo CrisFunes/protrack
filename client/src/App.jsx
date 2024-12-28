@@ -9,6 +9,7 @@ import Tasks from './pages/Tasks';
 import Calendar from './pages/Calendar';
 import Reports from './pages/Reports';
 import Integrations from './pages/Integrations';
+import Repositories from './pages/Repositories';
 import Settings from './pages/Settings';
 import AuthForm from './components/auth/AuthForm';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -43,6 +44,7 @@ function App() {
           >
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/projects" element={<Projects />} />
+            <Route path="/repositories" element={<Repositories />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/reports" element={<Reports />} />
