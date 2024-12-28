@@ -5,8 +5,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const integrationRoutes = require('./routes/integrations');
-const auth = require('./middleware/auth');
 const githubRoutes = require('./routes/github');
+const bitbucketRoutes = require('./routes/bitbucket');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -51,6 +51,7 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/integrations', integrationRoutes);
 app.use('/api/integrations/github', githubRoutes);
+app.use('/api/integrations/bitbucket', bitbucketRoutes);
 
 // DB Status route
 app.get('/api/db-status', async (req, res) => {
