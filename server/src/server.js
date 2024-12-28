@@ -6,6 +6,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const integrationRoutes = require('./routes/integrations');
 const auth = require('./middleware/auth');
+const githubRoutes = require('./routes/github');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -49,6 +50,7 @@ connectDB();
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/integrations', integrationRoutes);
+app.use('/api/integrations/github', githubRoutes);
 
 // DB Status route
 app.get('/api/db-status', async (req, res) => {
