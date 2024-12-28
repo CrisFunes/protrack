@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
@@ -8,16 +9,18 @@ import Switch from '@mui/material/Switch';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import JiraIntegrationDialog from './JiraIntegrationDialog';
-import { Box, IconButton, Tooltip } from '@mui/material';
-import { Settings, Refresh } from '@mui/icons-material';
 import GitHubIntegrationDialog from './GitHubIntegrationDialog';
-
+import BitBucketIntegrationDialog from './BitBucketIntegrationDialog';
+import { Box, IconButton, Tooltip, Snackbar } from '@mui/material';
+import { Settings, Refresh } from '@mui/icons-material';
 
 const Integrations = () => {
+  const location = useLocation();
+  const [notification, setNotification] = useState(null);
   const [integrations, setIntegrations] = useState([
     { id: 'jira', name: 'Jira', connected: false, lastSync: null },
     { id: 'slack', name: 'Slack', connected: false, lastSync: null },
-    { id: 'bitbucket', name: 'Bitbucket', connected: false, lastSync: null },
+    { id: 'bitbucket', name: 'BitBucket', connected: false, lastSync: null },
     { id: 'github', name: 'GitHub', connected: false, lastSync: null },
     { id: 'trello', name: 'Trello', connected: false, lastSync: null },
   ]);
@@ -25,13 +28,26 @@ const Integrations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [jiraDialogOpen, setJiraDialogOpen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [githubDialogOpen, setGithubDialogOpen] = useState(false);
+  const [bitbucketDialogOpen, setBitbucketDialogOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Cargar el estado de las integraciones al montar el componente
   useEffect(() => {
+    // Manejar mensaje de reconexión desde la redirección
+    if (location.state?.reconnectService && location.state?.message) {
+      setNotification({
+        service: location.state.reconnectService,
+        message: location.state.message
+      });
+      
+      // Marcar el servicio como desconectado
+      updateIntegrationStatus(location.state.reconnectService, false);
+      
+      // Limpiar el estado de la ubicación
+      window.history.replaceState({}, document.title);
+    }
     fetchIntegrationStatus();
-  }, []);
+  }, [location]);
 
   const fetchIntegrationStatus = async () => {
     try {
@@ -94,13 +110,15 @@ const Integrations = () => {
   
         updateIntegrationStatus(integrationId, false);
       } else {
-        // Abrir el diálogo correspondiente
         switch (integrationId) {
           case 'jira':
             setJiraDialogOpen(true);
             break;
           case 'github':
             setGithubDialogOpen(true);
+            break;
+          case 'bitbucket':
+            setBitbucketDialogOpen(true);
             break;
           // Agregar más casos según necesites
         }
@@ -110,21 +128,31 @@ const Integrations = () => {
       console.error('Error toggling integration:', err);
     }
   };
-    
 
   const handleRefresh = async (integrationId) => {
     setRefreshing(true);
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`/api/integrations/${integrationId}/sync`, {
         method: 'POST',
-        credentials: 'include'
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (!response.ok) {
+        const data = await response.json();
+        if (response.status === 401 && data.code === 'TOKEN_REVOKED') {
+          updateIntegrationStatus(integrationId, false);
+          setNotification({
+            service: integrationId,
+            message: data.message || `Your ${integrationId} connection needs to be renewed. Please reconnect.`
+          });
+          return;
+        }
         throw new Error(`Failed to sync ${integrationId}`);
       }
 
-      // Actualizar el lastSync para esta integración
       const data = await response.json();
       updateIntegrationLastSync(integrationId, data.lastSync);
     } catch (err) {
@@ -155,14 +183,19 @@ const Integrations = () => {
     );
   };
 
+  const handleJiraConnect = async (data) => {
+    updateIntegrationStatus('jira', true, new Date());
+    setJiraDialogOpen(false);
+  };
+
   const handleGitHubConnect = async (data) => {
     updateIntegrationStatus('github', true, new Date());
     setGithubDialogOpen(false);
   };
 
-  const handleJiraConnect = async (data) => {
-    updateIntegrationStatus('jira', true, new Date());
-    setJiraDialogOpen(false);
+  const handleBitBucketConnect = async (data) => {
+    updateIntegrationStatus('bitbucket', true, new Date());
+    setBitbucketDialogOpen(false);
   };
 
   if (loading) {
@@ -182,6 +215,28 @@ const Integrations = () => {
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
+        </Alert>
+      )}
+
+      {notification && (
+        <Alert 
+          severity="warning" 
+          sx={{ mb: 2 }} 
+          onClose={() => setNotification(null)}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={() => {
+                handleIntegrationToggle(notification.service);
+                setNotification(null);
+              }}
+            >
+              Reconnect
+            </Button>
+          }
+        >
+          {notification.message}
         </Alert>
       )}
 
@@ -244,6 +299,11 @@ const Integrations = () => {
         open={githubDialogOpen}
         onClose={() => setGithubDialogOpen(false)}
         onConnect={handleGitHubConnect}
+      />
+      <BitBucketIntegrationDialog
+        open={bitbucketDialogOpen}
+        onClose={() => setBitbucketDialogOpen(false)}
+        onConnect={handleBitBucketConnect}
       />
     </div>
   );

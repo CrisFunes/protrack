@@ -51,38 +51,60 @@ router.post('/connect', auth, async (req, res) => {
 
 // Obtener repositorios de GitHub
 router.get('/repositories', auth, async (req, res) => {
-  try {
-    const integration = await Integration.findOne({
-      userId: req.user.id,
-      service: 'github',
-      isConnected: true
-    });
-
-    if (!integration) {
-      return res.status(404).json({ error: 'GitHub integration not found' });
-    }
-
-    const { accessToken } = integration.credentials;
-
-    const response = await axios.get('https://api.github.com/user/repos', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Accept': 'application/vnd.github.v3+json'
-      },
-      params: {
-        sort: 'updated',
-        per_page: 100
+    try {
+      const integration = await Integration.findOne({
+        userId: req.user.id,
+        service: 'github',
+        isConnected: true
+      });
+  
+      if (!integration) {
+        return res.status(404).json({ 
+          error: 'GitHub integration not found',
+          message: 'Please connect your GitHub account'
+        });
       }
-    });
-
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error fetching GitHub repositories:', error);
-    res.status(500).json({
-      error: 'Failed to fetch GitHub repositories',
-      details: error.message
-    });
-  }
-});
-
+  
+      const { accessToken } = integration.credentials;
+  
+      try {
+        const response = await axios.get('https://api.github.com/user/repos', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          },
+          params: {
+            sort: 'updated',
+            per_page: 100
+          }
+        });
+  
+        const repositories = response.data;
+        res.json(repositories);
+      } catch (apiError) {
+        // Manejar específicamente errores de token
+        if (apiError.response?.status === 401) {
+          // Desactivar la integración
+          await Integration.findByIdAndUpdate(integration._id, {
+            isConnected: false
+          });
+  
+          return res.status(401).json({
+            error: 'Token expired or revoked',
+            message: 'GitHub token has expired or been revoked. Please reconnect your account.',
+            code: 'TOKEN_REVOKED'
+          });
+        }
+  
+        throw apiError;
+      }
+    } catch (error) {
+      console.error('Error fetching GitHub repositories:', error);
+      res.status(500).json({
+        error: 'Failed to fetch repositories',
+        message: error.response?.data?.message || error.message
+      });
+    }
+  });
+  
 module.exports = router;
