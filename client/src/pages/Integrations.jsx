@@ -13,6 +13,7 @@ import GitHubIntegrationDialog from './GitHubIntegrationDialog';
 import BitBucketIntegrationDialog from './BitBucketIntegrationDialog';
 import { Box, IconButton, Tooltip, Snackbar } from '@mui/material';
 import { Settings, Refresh } from '@mui/icons-material';
+import TrelloIntegrationDialog from './TrelloIntegrationDialog';
 
 const Integrations = () => {
   const location = useLocation();
@@ -30,6 +31,7 @@ const Integrations = () => {
   const [jiraDialogOpen, setJiraDialogOpen] = useState(false);
   const [githubDialogOpen, setGithubDialogOpen] = useState(false);
   const [bitbucketDialogOpen, setBitbucketDialogOpen] = useState(false);
+  const [trelloDialogOpen, setTrelloDialogOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -114,13 +116,15 @@ const Integrations = () => {
           case 'jira':
             setJiraDialogOpen(true);
             break;
+          case 'trello':
+            setTrelloDialogOpen(true);
+            break;
           case 'github':
             setGithubDialogOpen(true);
             break;
           case 'bitbucket':
             setBitbucketDialogOpen(true);
             break;
-          // Agregar más casos según necesites
         }
       }
     } catch (err) {
@@ -196,6 +200,11 @@ const Integrations = () => {
   const handleBitBucketConnect = async (data) => {
     updateIntegrationStatus('bitbucket', true, new Date());
     setBitbucketDialogOpen(false);
+  };
+
+  const handleTrelloConnect = async (data) => {
+    updateIntegrationStatus('trello', true, new Date());
+    setTrelloDialogOpen(false);
   };
 
   if (loading) {
@@ -304,6 +313,11 @@ const Integrations = () => {
         open={bitbucketDialogOpen}
         onClose={() => setBitbucketDialogOpen(false)}
         onConnect={handleBitBucketConnect}
+      />
+      <TrelloIntegrationDialog
+        open={trelloDialogOpen}
+        onClose={() => setTrelloDialogOpen(false)}
+        onConnect={handleTrelloConnect}
       />
     </div>
   );
