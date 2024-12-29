@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const integrationRoutes = require('./routes/integrations');
 const githubRoutes = require('./routes/github');
 const bitbucketRoutes = require('./routes/bitbucket');
+const trelloRoutes = require('./routes/trello');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -52,6 +53,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/integrations', integrationRoutes);
 app.use('/api/integrations/github', githubRoutes);
 app.use('/api/integrations/bitbucket', bitbucketRoutes);
+app.use('/api/integrations/trello', trelloRoutes);
 
 // DB Status route
 app.get('/api/db-status', async (req, res) => {
