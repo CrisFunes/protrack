@@ -2,6 +2,9 @@ const jwt = require('jsonwebtoken');
 
 const authMiddleware = async (req, res, next) => {
   try {
+    // Log para debugging
+    console.log('Auth Headers:', req.headers);
+    
     const authHeader = req.headers.authorization;
     
     if (!authHeader) {
@@ -16,16 +19,14 @@ const authMiddleware = async (req, res, next) => {
     const token = parts[1];
 
     // Verificar el token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     
     // Agregar la información del usuario decodificada a req
-    // Asegurarnos de que usamos userId que es lo que guardamos en el token
     req.user = {
-      id: decoded.userId // Esto coincide con lo que guardamos en authController.js
+      userId: decoded.userId // Cambiamos id por userId para mantener consistencia
     };
 
-    // Log para debugging
-    console.log('Auth successful for user:', req.user.id);
+    console.log('Auth successful for user:', req.user.userId);
 
     next();
   } catch (error) {

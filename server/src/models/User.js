@@ -15,6 +15,17 @@ const userSchema = new mongoose.Schema({
   },
   firstName: String,
   lastName: String,
+  jobTitle: String,
+  preferences: {
+    emailNotifications: {
+      type: Boolean,
+      default: true
+    },
+    darkMode: {
+      type: Boolean,
+      default: false
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now
