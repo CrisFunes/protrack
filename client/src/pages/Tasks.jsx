@@ -11,6 +11,7 @@ import Button from '@mui/material/Button';
 import { Link } from 'react-router-dom';
 import TrelloIcon from '@mui/icons-material/ViewKanban';
 import JiraIcon from './JiraIcon';  // Asegúrate de tener este componente
+import GitHubIcon from '@mui/icons-material/GitHub';
 import IconButton from '@mui/material/IconButton';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Tabs from '@mui/material/Tabs';
@@ -23,16 +24,25 @@ import InputLabel from '@mui/material/InputLabel';
 const Tasks = () => {
   const [tasks, setTasks] = useState({
     jira: [],
-    trello: []
+    trello: [],
+    github: [],
+    bitbucket: []
   });
+  
   const [loading, setLoading] = useState({
     jira: true,
-    trello: true
+    trello: true,
+    github: true,
+    bitbucket: true
   });
+  
   const [error, setError] = useState({
     jira: null,
-    trello: null
+    trello: null,
+    github: null,
+    bitbucket: null
   });
+
   const [activeTab, setActiveTab] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -44,7 +54,9 @@ const Tasks = () => {
   const fetchAllTasks = async () => {
     await Promise.all([
       fetchJiraTasks(),
-      fetchTrelloCards()
+      fetchTrelloCards(),
+      fetchGitHubTasks(),
+      fetchBitbucketTasks()
     ]);
   };
 
@@ -104,8 +116,70 @@ const Tasks = () => {
     }
   };
 
-  const normalizeStatus = (status) => {
+  const fetchGitHubTasks = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token found');
+
+      const response = await fetch('/api/integrations/github/tasks', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 404) {
+        setLoading(prev => ({ ...prev, github: false }));
+        return;
+      }
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const data = await response.json();
+      setTasks(prev => ({ ...prev, github: data }));
+    } catch (error) {
+      console.error('Error fetching GitHub tasks:', error);
+      setError(prev => ({ ...prev, github: error.message }));
+    } finally {
+      setLoading(prev => ({ ...prev, github: false }));
+    }
+  };
+
+  const fetchBitbucketTasks = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token found');
+
+      const response = await fetch('/api/integrations/bitbucket/tasks', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 404) {
+        setLoading(prev => ({ ...prev, bitbucket: false }));
+        return;
+      }
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const data = await response.json();
+      setTasks(prev => ({ ...prev, bitbucket: data }));
+    } catch (error) {
+      console.error('Error fetching Bitbucket tasks:', error);
+      setError(prev => ({ ...prev, bitbucket: error.message }));
+    } finally {
+      setLoading(prev => ({ ...prev, bitbucket: false }));
+    }
+  };
+
+  const normalizeStatus = (status, type) => {
     status = status.toLowerCase().trim();
+    
+    if (type === 'pull-request') {
+      if (status === 'open' || status === 'draft') return 'todo';
+      if (status === 'merged') return 'done';
+      if (status === 'declined' || status === 'closed') return 'done';
+    }
     
     // Para tareas "To Do"
     if (status.includes('to do') || 
@@ -226,6 +300,10 @@ const Tasks = () => {
         return <JiraIcon width={20} height={20} />;
       case 'trello':
         return <TrelloIcon />;
+      case 'github':
+        return <GitHubIcon />;
+      case 'bitbucket':
+        return <img src="/bitbucket-icon.png" alt="Bitbucket" width="20" height="20" />;
       default:
         return null;
     }
@@ -240,9 +318,15 @@ const Tasks = () => {
     if (activeTab === 'all' || activeTab === 'trello') {
       filteredTasks = [...filteredTasks, ...tasks.trello];
     }
+    if (activeTab === 'all' || activeTab === 'github') {
+      filteredTasks = [...filteredTasks, ...tasks.github];
+    }
+    if (activeTab === 'all' || activeTab === 'bitbucket') {
+      filteredTasks = [...filteredTasks, ...tasks.bitbucket];
+    }
 
     return filteredTasks.filter(task => {
-      const normalizedTaskStatus = normalizeStatus(task.status);
+      const normalizedTaskStatus = normalizeStatus(task.status, task.type);
       const normalizedTaskPriority = normalizePriority(task.priority);
       
       const statusMatch = statusFilter === 'all' || 
@@ -274,6 +358,8 @@ const Tasks = () => {
           <Tab label="All" value="all" />
           <Tab label="Jira" value="jira" />
           <Tab label="Trello" value="trello" />
+          <Tab label="GitHub" value="github" />
+          <Tab label="Bitbucket" value="bitbucket" />
         </Tabs>
       </Box>
 
