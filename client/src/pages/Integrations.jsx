@@ -20,7 +20,7 @@ const Integrations = () => {
   const [notification, setNotification] = useState(null);
   const [integrations, setIntegrations] = useState([
     { id: 'jira', name: 'Jira', connected: false, lastSync: null },
-    { id: 'slack', name: 'Slack', connected: false, lastSync: null },
+    { id: 'slack', name: 'Slack (Coming Soon)', connected: false, lastSync: null },
     { id: 'bitbucket', name: 'BitBucket', connected: false, lastSync: null },
     { id: 'github', name: 'GitHub', connected: false, lastSync: null },
     { id: 'trello', name: 'Trello', connected: false, lastSync: null },
