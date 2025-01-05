@@ -51,60 +51,200 @@ router.post('/connect', auth, async (req, res) => {
 
 // Obtener repositorios de GitHub
 router.get('/repositories', auth, async (req, res) => {
-    try {
-      const integration = await Integration.findOne({
-        userId: req.user.id,
-        service: 'github',
-        isConnected: true
-      });
-  
-      if (!integration) {
-        return res.status(404).json({ 
-          error: 'GitHub integration not found',
-          message: 'Please connect your GitHub account'
-        });
-      }
-  
-      const { accessToken } = integration.credentials;
-  
-      try {
-        const response = await axios.get('https://api.github.com/user/repos', {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Accept': 'application/vnd.github.v3+json'
-          },
-          params: {
-            sort: 'updated',
-            per_page: 100
-          }
-        });
-  
-        const repositories = response.data;
-        res.json(repositories);
-      } catch (apiError) {
-        // Manejar específicamente errores de token
-        if (apiError.response?.status === 401) {
-          // Desactivar la integración
-          await Integration.findByIdAndUpdate(integration._id, {
-            isConnected: false
-          });
-  
-          return res.status(401).json({
-            error: 'Token expired or revoked',
-            message: 'GitHub token has expired or been revoked. Please reconnect your account.',
-            code: 'TOKEN_REVOKED'
-          });
-        }
-  
-        throw apiError;
-      }
-    } catch (error) {
-      console.error('Error fetching GitHub repositories:', error);
-      res.status(500).json({
-        error: 'Failed to fetch repositories',
-        message: error.response?.data?.message || error.message
+  try {
+    const integration = await Integration.findOne({
+      userId: req.user.id,
+      service: 'github',
+      isConnected: true
+    });
+
+    if (!integration) {
+      return res.status(404).json({
+        error: 'GitHub integration not found',
+        message: 'Please connect your GitHub account'
       });
     }
-  });
+
+    const { accessToken } = integration.credentials;
+
+    try {
+      const response = await axios.get('https://api.github.com/user/repos', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        params: {
+          sort: 'updated',
+          per_page: 100
+        }
+      });
+
+      const repositories = response.data;
+      res.json(repositories);
+    } catch (apiError) {
+      // Manejar específicamente errores de token
+      if (apiError.response?.status === 401) {
+        // Desactivar la integración
+        await Integration.findByIdAndUpdate(integration._id, {
+          isConnected: false
+        });
+
+        return res.status(401).json({
+          error: 'Token expired or revoked',
+          message: 'GitHub token has expired or been revoked. Please reconnect your account.',
+          code: 'TOKEN_REVOKED'
+        });
+      }
+
+      throw apiError;
+    }
+  } catch (error) {
+    console.error('Error fetching GitHub repositories:', error);
+    res.status(500).json({
+      error: 'Failed to fetch repositories',
+      message: error.response?.data?.message || error.message
+    });
+  }
+});
+
+router.get('/tasks', auth, async (req, res) => {
+  try {
+    const integration = await Integration.findOne({
+      userId: req.user.userId,
+      service: 'github',
+      isConnected: true
+    });
+
+    if (!integration) {
+      return res.status(404).json({
+        error: 'Integration not found',
+        message: 'Please connect your GitHub account first'
+      });
+    }
+
+    const { accessToken } = integration.credentials;
+
+    // Obtener issues usando la API de búsqueda
+    const issuesResponse = await axios.get(
+      'https://api.github.com/search/issues', 
+      {
+        headers: {
+          'Authorization': `token ${accessToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        params: {
+          q: 'is:issue assignee:@me', // Busca issues asignados al usuario autenticado
+          per_page: 100
+        }
+      }
+    );
+
+    // Obtener pull requests
+    const prsResponse = await axios.get(
+      'https://api.github.com/search/issues', 
+      {
+        headers: {
+          'Authorization': `token ${accessToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        params: {
+          q: 'is:pr assignee:@me', // Busca PRs asignados al usuario autenticado
+          per_page: 100
+        }
+      }
+    );
+
+    // Transformar los issues
+    const issues = issuesResponse.data.items.map(issue => ({
+      id: `gh-issue-${issue.id}`,
+      title: issue.title,
+      description: issue.body,
+      status: issue.state,
+      priority: getPriorityFromLabels(issue.labels),
+      project: issue.repository_url.split('/').slice(-2).join('/'),
+      url: issue.html_url,
+      source: 'github',
+      type: 'issue',
+      created_at: issue.created_at,
+      updated_at: issue.updated_at,
+      labels: issue.labels.map(label => ({
+        name: label.name,
+        color: label.color
+      }))
+    }));
+
+    // Transformar los pull requests
+    const pullRequests = prsResponse.data.items.map(pr => ({
+      id: `gh-pr-${pr.id}`,
+      title: pr.title,
+      description: pr.body,
+      status: pr.state,
+      priority: getPriorityFromLabels(pr.labels),
+      project: pr.repository_url.split('/').slice(-2).join('/'),
+      url: pr.html_url,
+      source: 'github',
+      type: 'pull-request',
+      created_at: pr.created_at,
+      updated_at: pr.updated_at,
+      labels: pr.labels.map(label => ({
+        name: label.name,
+        color: label.color
+      }))
+    }));
+
+    // Combinar y enviar todas las tareas
+    const allTasks = [...issues, ...pullRequests];
+    
+    // Log para debugging
+    console.log(`Found ${issues.length} issues and ${pullRequests.length} pull requests`);
+
+    res.json(allTasks);
+
+  } catch (error) {
+    console.error('Error fetching GitHub tasks:', error.response?.data || error);
+    res.status(500).json({
+      error: 'Failed to fetch tasks',
+      message: error.message,
+      details: error.response?.data
+    });
+  }
+});
+
+// Función auxiliar para determinar la prioridad basada en las etiquetas
+function getPriorityFromLabels(labels = []) {
+  const labelNames = labels.map(label => label.name.toLowerCase());
   
+  if (labelNames.some(name => 
+    name.includes('high') || 
+    name.includes('urgent') || 
+    name.includes('priority:high') ||
+    name.includes('priority/high') ||
+    name.includes('p1') ||
+    name.includes('critical')
+  )) {
+    return 'high';
+  }
+  
+  if (labelNames.some(name => 
+    name.includes('low') || 
+    name.includes('minor') || 
+    name.includes('priority:low') ||
+    name.includes('priority/low') ||
+    name.includes('p3')
+  )) {
+    return 'low';
+  }
+  
+  if (labelNames.some(name =>
+    name.includes('medium') ||
+    name.includes('priority:medium') ||
+    name.includes('priority/medium') ||
+    name.includes('p2')
+  )) {
+    return 'medium';
+  }
+  
+  return 'medium'; // Prioridad por defecto si no hay etiquetas de prioridad
+}
+
 module.exports = router;
