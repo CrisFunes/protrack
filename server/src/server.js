@@ -8,6 +8,7 @@ const integrationRoutes = require('./routes/integrations');
 const githubRoutes = require('./routes/github');
 const bitbucketRoutes = require('./routes/bitbucket');
 const trelloRoutes = require('./routes/trello');
+const jiraRoutes = require('./routes/jira');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -52,6 +53,7 @@ connectDB();
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/integrations', integrationRoutes);
+app.use('/api/integrations/jira', jiraRoutes);
 app.use('/api/integrations/github', githubRoutes);
 app.use('/api/integrations/bitbucket', bitbucketRoutes);
 app.use('/api/integrations/trello', trelloRoutes);

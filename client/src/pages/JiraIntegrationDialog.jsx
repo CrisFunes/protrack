@@ -6,7 +6,10 @@ import {
   DialogActions,
   TextField,
   Button,
-  Alert
+  Alert,
+  Typography,
+  Link,
+  Box
 } from '@mui/material';
 
 const JiraIntegrationDialog = ({ open, onClose, onConnect }) => {
@@ -16,11 +19,12 @@ const JiraIntegrationDialog = ({ open, onClose, onConnect }) => {
     apiToken: ''
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
-      // Obtener el token de autenticación
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No authentication token found');
@@ -46,13 +50,15 @@ const JiraIntegrationDialog = ({ open, onClose, onConnect }) => {
     } catch (err) {
       setError(err.message);
       console.error('Error connecting to Jira:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value.trim()
     });
   };
 
@@ -65,6 +71,36 @@ const JiraIntegrationDialog = ({ open, onClose, onConnect }) => {
             {error}
           </Alert>
         )}
+        
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          To connect with Jira, you'll need your Base URL, Email, and API Token. Follow these steps:
+        </Typography>
+        
+        <Box component="ol" sx={{ mb: 2 }}>
+          <li>
+            <Typography variant="body2">
+              Get your Jira Base URL (e.g., https://your-domain.atlassian.net)
+            </Typography>
+          </li>
+          <li>
+            <Typography variant="body2">
+              Use the email associated with your Atlassian account
+            </Typography>
+          </li>
+          <li>
+            <Typography variant="body2">
+              Generate an API Token from{' '}
+              <Link 
+                href="https://id.atlassian.com/manage-profile/security/api-tokens" 
+                target="_blank" 
+                rel="noopener"
+              >
+                Atlassian's Security Settings
+              </Link>
+            </Typography>
+          </li>
+        </Box>
+
         <TextField
           name="baseUrl"
           label="Jira Base URL"
@@ -73,6 +109,7 @@ const JiraIntegrationDialog = ({ open, onClose, onConnect }) => {
           placeholder="https://your-domain.atlassian.net"
           value={formData.baseUrl}
           onChange={handleChange}
+          disabled={loading}
         />
         <TextField
           name="email"
@@ -81,6 +118,7 @@ const JiraIntegrationDialog = ({ open, onClose, onConnect }) => {
           margin="normal"
           value={formData.email}
           onChange={handleChange}
+          disabled={loading}
         />
         <TextField
           name="apiToken"
@@ -90,13 +128,18 @@ const JiraIntegrationDialog = ({ open, onClose, onConnect }) => {
           type="password"
           value={formData.apiToken}
           onChange={handleChange}
-          helperText="Get your API token from Atlassian account settings"
+          disabled={loading}
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSubmit} variant="contained" color="primary">
-          Connect
+        <Button onClick={onClose} disabled={loading}>Cancel</Button>
+        <Button 
+          onClick={handleSubmit} 
+          variant="contained" 
+          color="primary"
+          disabled={loading || !formData.baseUrl || !formData.email || !formData.apiToken}
+        >
+          {loading ? 'Connecting...' : 'Connect'}
         </Button>
       </DialogActions>
     </Dialog>
