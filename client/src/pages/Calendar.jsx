@@ -22,6 +22,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import TrelloIcon from '@mui/icons-material/ViewKanban';
 import JiraIcon from './JiraIcon';
+import BitbucketIcon from './BitbucketIcon';
 
 // Componente personalizado para los días del calendario
 function ServerDay(props) {
@@ -79,7 +80,7 @@ const EventListItem = ({ event }) => {
       case 'github':
         return <GitHubIcon />;
       case 'bitbucket':
-        return <GitHubIcon width={20} height={20} />;
+        return <BitbucketIcon width={20} height={20} />;
       default:
         return null;
     }

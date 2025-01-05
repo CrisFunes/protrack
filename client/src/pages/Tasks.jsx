@@ -20,6 +20,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
+import BitbucketIcon from './BitbucketIcon';
 
 const Tasks = () => {
   const [tasks, setTasks] = useState({
@@ -304,7 +305,7 @@ const Tasks = () => {
       case 'github':
         return <GitHubIcon />;
       case 'bitbucket':
-        return <img src="/bitbucket-icon.png" alt="Bitbucket" width="20" height="20" />;
+        return <BitbucketIcon width={20} height={20} />;
       default:
         return null;
     }
