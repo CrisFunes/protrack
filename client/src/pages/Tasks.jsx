@@ -201,6 +201,7 @@ const Tasks = () => {
         status.includes('started') ||
         status.includes('en proceso') ||
         status.includes('en progreso') ||
+        status.includes('en curso') ||
         status.includes('iniciado') ||
         status.includes('iniciada') ||
         status.includes('trabajando')) {
@@ -353,44 +354,57 @@ const Tasks = () => {
         Tasks
       </Typography>
 
-      <Box sx={{ mb: 3 }}>
-        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+      <Box sx={{ 
+        mb: 3, 
+        display: 'flex', 
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottom: 1,
+        borderColor: 'divider'
+      }}>
+        {/* Contenedor izquierdo para las pestañas */}
+        <Tabs 
+          value={activeTab} 
+          onChange={(e, newValue) => setActiveTab(newValue)}
+          sx={{ flex: 1 }}
+        >
           <Tab label="All" value="all" />
           <Tab label="Jira" value="jira" />
           <Tab label="Trello" value="trello" />
           <Tab label="GitHub" value="github" />
           <Tab label="Bitbucket" value="bitbucket" />
         </Tabs>
-      </Box>
 
-      <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
-        <FormControl sx={{ minWidth: 120 }}>
-          <InputLabel>Status</InputLabel>
-          <Select
-            value={statusFilter}
-            label="Status"
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="todo">To Do</MenuItem>
-            <MenuItem value="progress">In Progress</MenuItem>
-            <MenuItem value="done">Done</MenuItem>
-          </Select>
-        </FormControl>
+        {/* Contenedor derecho para los filtros */}
+        <Box sx={{ display: 'flex', gap: 2, py: 1 }}>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={statusFilter}
+              label="Status"
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="todo">To Do</MenuItem>
+              <MenuItem value="progress">In Progress</MenuItem>
+              <MenuItem value="done">Done</MenuItem>
+            </Select>
+          </FormControl>
 
-        <FormControl sx={{ minWidth: 120 }}>
-          <InputLabel>Priority</InputLabel>
-          <Select
-            value={priorityFilter}
-            label="Priority"
-            onChange={(e) => setPriorityFilter(e.target.value)}
-          >
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="high">High</MenuItem>
-            <MenuItem value="medium">Medium</MenuItem>
-            <MenuItem value="low">Low</MenuItem>
-          </Select>
-        </FormControl>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Priority</InputLabel>
+            <Select
+              value={priorityFilter}
+              label="Priority"
+              onChange={(e) => setPriorityFilter(e.target.value)}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="high">High</MenuItem>
+              <MenuItem value="medium">Medium</MenuItem>
+              <MenuItem value="low">Low</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
       </Box>
 
       <Grid container spacing={3}>
