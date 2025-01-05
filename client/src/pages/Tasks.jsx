@@ -104,20 +104,120 @@ const Tasks = () => {
     }
   };
 
+  const normalizeStatus = (status) => {
+    status = status.toLowerCase().trim();
+    
+    // Para tareas "To Do"
+    if (status.includes('to do') || 
+        status.includes('todo') || 
+        status.includes('backlog') || 
+        status.includes('open') ||
+        status.includes('por hacer') ||
+        status.includes('pendiente') ||
+        status.includes('nuevo') ||
+        status.includes('nueva') ||
+        status === 'new') {
+      return 'todo';
+    }
+    
+    // Para tareas "In Progress"
+    if (status.includes('progress') || 
+        status.includes('doing') || 
+        status.includes('ongoing') ||
+        status.includes('started') ||
+        status.includes('en proceso') ||
+        status.includes('en progreso') ||
+        status.includes('iniciado') ||
+        status.includes('iniciada') ||
+        status.includes('trabajando')) {
+      return 'progress';
+    }
+    
+    // Para tareas "Done"
+    if (status.includes('done') || 
+        status.includes('complete') || 
+        status.includes('finished') ||
+        status.includes('closed') ||
+        status.includes('terminado') ||
+        status.includes('terminada') ||
+        status.includes('completado') ||
+        status.includes('completada') ||
+        status.includes('finalizado') ||
+        status.includes('finalizada') ||
+        status.includes('cerrado') ||
+        status.includes('cerrada') ||
+        status.includes('resuelto') ||
+        status.includes('resuelta')) {
+      return 'done';
+    }
+  
+    return 'other';
+  };
+  
+  // Función para normalizar prioridades
+  const normalizePriority = (priority) => {
+    priority = priority.toLowerCase().trim();
+    
+    if (priority.includes('high') || 
+        priority.includes('urgent') || 
+        priority.includes('highest') ||
+        priority.includes('alta') ||
+        priority.includes('alto') ||
+        priority.includes('urgente') ||
+        priority.includes('crítica') ||
+        priority.includes('critica')) {
+      return 'high';
+    }
+    
+    if (priority.includes('medium') || 
+        priority.includes('normal') || 
+        priority.includes('default') ||
+        priority.includes('media') ||
+        priority.includes('medio') ||
+        priority.includes('moderada') ||
+        priority.includes('moderado')) {
+      return 'medium';
+    }
+    
+    if (priority.includes('low') || 
+        priority.includes('lowest') || 
+        priority.includes('minor') ||
+        priority.includes('baja') ||
+        priority.includes('bajo') ||
+        priority.includes('mínima') ||
+        priority.includes('minima')) {
+      return 'low';
+    }
+  
+    return 'medium'; // prioridad por defecto
+  };
+
   const getStatusColor = (status) => {
-    status = status.toLowerCase();
-    if (status.includes('done') || status.includes('complete')) return 'success';
-    if (status.includes('progress')) return 'warning';
-    if (status.includes('block') || status.includes('fail')) return 'error';
-    return 'default';
+    const normalizedStatus = normalizeStatus(status);
+    switch (normalizedStatus) {
+      case 'done':
+        return 'success';
+      case 'progress':
+        return 'warning';
+      case 'todo':
+        return 'info';
+      default:
+        return 'default';
+    }
   };
 
   const getPriorityColor = (priority) => {
-    priority = priority.toLowerCase();
-    if (priority.includes('high')) return 'error';
-    if (priority.includes('medium')) return 'warning';
-    if (priority.includes('low')) return 'success';
-    return 'default';
+    const normalizedPriority = normalizePriority(priority);
+    switch (normalizedPriority) {
+      case 'high':
+        return 'error';
+      case 'medium':
+        return 'warning';
+      case 'low':
+        return 'success';
+      default:
+        return 'default';
+    }
   };
 
   const getSourceIcon = (source) => {
@@ -142,13 +242,18 @@ const Tasks = () => {
     }
 
     return filteredTasks.filter(task => {
+      const normalizedTaskStatus = normalizeStatus(task.status);
+      const normalizedTaskPriority = normalizePriority(task.priority);
+      
       const statusMatch = statusFilter === 'all' || 
-        task.status.toLowerCase().includes(statusFilter.toLowerCase());
+                         normalizedTaskStatus === statusFilter;
       const priorityMatch = priorityFilter === 'all' || 
-        task.priority.toLowerCase().includes(priorityFilter.toLowerCase());
+                           normalizedTaskPriority === priorityFilter;
+      
       return statusMatch && priorityMatch;
     });
   };
+
 
   if (loading.jira || loading.trello) {
     return (
