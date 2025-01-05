@@ -160,4 +160,54 @@ router.get('/tasks', auth, async (req, res) => {
   }
 });
 
+router.get('/calendar-events', auth, async (req, res) => {
+  try {
+    const integration = await Integration.findOne({
+      userId: req.user.userId,
+      service: 'jira',
+      isConnected: true
+    });
+
+    if (!integration) {
+      return res.status(404).json({
+        error: 'Integration not found',
+        message: 'Please connect your Jira account first'
+      });
+    }
+
+    const { baseUrl, email, apiToken } = integration.credentials;
+
+    // Obtener issues con fechas de vencimiento
+    const response = await axios.get(`${baseUrl}/rest/api/3/search`, {
+      auth: { username: email, password: apiToken },
+      params: {
+        jql: 'duedate >= startOfMonth() AND duedate <= endOfMonth()',
+        fields: 'summary,duedate,status,priority,assignee,project'
+      }
+    });
+
+    // Transformar las issues en eventos
+    const events = response.data.issues.map(issue => ({
+      id: issue.id,
+      title: issue.fields.summary,
+      date: issue.fields.duedate,
+      status: issue.fields.status.name,
+      priority: issue.fields.priority.name,
+      project: issue.fields.project.name,
+      type: 'due-date',
+      source: 'jira',
+      url: `${baseUrl}/browse/${issue.key}`
+    }));
+
+    res.json(events);
+
+  } catch (error) {
+    console.error('Error fetching Jira calendar events:', error.response?.data || error);
+    res.status(500).json({
+      error: 'Failed to fetch calendar events',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;

@@ -203,4 +203,95 @@ router.get('/cards', auth, async (req, res) => {
   }
 });
 
+router.get('/calendar-events', auth, async (req, res) => {
+  try {
+    const integration = await Integration.findOne({
+      userId: req.user.userId,
+      service: 'trello',
+      isConnected: true
+    });
+
+    if (!integration) {
+      return res.status(404).json({
+        error: 'Integration not found',
+        message: 'Please connect your Trello account first'
+      });
+    }
+
+    const { apiKey, token } = integration.credentials;
+
+    // Obtener cards con fecha de vencimiento
+    const response = await axios.get('https://api.trello.com/1/members/me/cards', {
+      params: {
+        key: apiKey,
+        token: token,
+        filter: 'visible',
+        fields: 'id,name,desc,due,dueComplete,labels,url,idList,idBoard'
+      }
+    });
+
+    // Obtener boards para obtener nombres de proyectos
+    const boards = {};
+    const boardsResponse = await axios.get('https://api.trello.com/1/members/me/boards', {
+      params: {
+        key: apiKey,
+        token: token,
+        fields: 'id,name'
+      }
+    });
+    boardsResponse.data.forEach(board => boards[board.id] = board.name);
+
+    // Transformar cards en eventos
+    const events = response.data
+      .filter(card => card.due) // Solo cards con fecha de vencimiento
+      .map(card => ({
+        id: `trello-${card.id}`,
+        title: card.name,
+        description: card.desc,
+        date: card.due,
+        status: card.dueComplete ? 'Complete' : 'Pending',
+        priority: getPriorityFromLabels(card.labels),
+        project: boards[card.idBoard] || 'Unknown Board',
+        url: card.url,
+        source: 'trello',
+        type: 'card'
+      }));
+
+    res.json(events);
+
+  } catch (error) {
+    console.error('Error fetching Trello calendar events:', error.response?.data || error);
+    res.status(500).json({
+      error: 'Failed to fetch calendar events',
+      message: error.message
+    });
+  }
+});
+
+// Función auxiliar para determinar prioridad basada en etiquetas
+function getPriorityFromLabels(labels) {
+  if (!labels || labels.length === 0) return 'medium';
+
+  const labelNames = labels.map(label => label.name.toLowerCase());
+  
+  if (labelNames.some(name => 
+    name.includes('high') || 
+    name.includes('urgent') || 
+    name.includes('priority:high')
+  )) {
+    return 'high';
+  }
+  
+  if (labelNames.some(name => 
+    name.includes('low') || 
+    name.includes('minor') || 
+    name.includes('priority:low')
+  )) {
+    return 'low';
+  }
+
+  return 'medium';
+}
+
+
 module.exports = router;

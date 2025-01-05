@@ -233,4 +233,90 @@ router.get('/tasks', auth, async (req, res) => {
   }
 });
 
+// En bitbucket.js
+router.get('/calendar-events', auth, async (req, res) => {
+  try {
+    const integration = await Integration.findOne({
+      userId: req.user.userId,
+      service: 'bitbucket',
+      isConnected: true
+    });
+
+    if (!integration) {
+      return res.status(404).json({
+        error: 'Integration not found',
+        message: 'Please connect your Bitbucket account first'
+      });
+    }
+
+    const { username, appPassword } = integration.credentials;
+    const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
+
+    // Obtener issues
+    const issuesResponse = await axios({
+      method: 'get',
+      url: `https://api.bitbucket.org/2.0/repositories/${username}/issues`,
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Accept': 'application/json'
+      },
+      params: {
+        q: 'assignee.username="' + username + '" AND deadline IS NOT null'
+      }
+    });
+
+    // Obtener PRs
+    const prsResponse = await axios({
+      method: 'get',
+      url: `https://api.bitbucket.org/2.0/repositories/${username}/pullrequests`,
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Accept': 'application/json'
+      },
+      params: {
+        q: 'author.username="' + username + '"'
+      }
+    });
+
+    // Transformar issues en eventos
+    const issueEvents = issuesResponse.data.values.map(issue => ({
+      id: `bitbucket-issue-${issue.id}`,
+      title: issue.title,
+      description: issue.content?.raw || '',
+      date: issue.deadline,
+      status: issue.state,
+      priority: issue.priority || 'medium',
+      project: issue.repository?.name || 'Unknown',
+      url: issue.links.html.href,
+      source: 'bitbucket',
+      type: 'issue'
+    }));
+
+    // Transformar PRs en eventos (solo los que tengan fecha objetivo)
+    const prEvents = prsResponse.data.values
+      .filter(pr => pr.target_date)
+      .map(pr => ({
+        id: `bitbucket-pr-${pr.id}`,
+        title: pr.title,
+        description: pr.description || '',
+        date: pr.target_date,
+        status: pr.state,
+        priority: 'medium',
+        project: pr.destination.repository.name,
+        url: pr.links.html.href,
+        source: 'bitbucket',
+        type: 'pull-request'
+      }));
+
+    res.json([...issueEvents, ...prEvents]);
+
+  } catch (error) {
+    console.error('Error fetching Bitbucket calendar events:', error.response?.data || error);
+    res.status(500).json({
+      error: 'Failed to fetch calendar events',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;

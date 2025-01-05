@@ -247,4 +247,119 @@ function getPriorityFromLabels(labels = []) {
   return 'medium'; // Prioridad por defecto si no hay etiquetas de prioridad
 }
 
+router.get('/calendar-events', auth, async (req, res) => {
+  try {
+    console.log('Fetching GitHub calendar events for user:', req.user.userId);
+
+    const integration = await Integration.findOne({
+      userId: req.user.userId,
+      service: 'github',
+      isConnected: true
+    });
+
+    console.log('Found GitHub integration:', integration ? 'yes' : 'no');
+
+    if (!integration) {
+      return res.status(404).json({
+        error: 'Integration not found',
+        message: 'Please connect your GitHub account first'
+      });
+    }
+
+    const { accessToken } = integration.credentials;
+    console.log('Access token exists:', !!accessToken);
+
+    // Primero verifica que el token sea válido
+    try {
+      const userResponse = await axios.get('https://api.github.com/user', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      console.log('GitHub token is valid, user:', userResponse.data.login);
+    } catch (tokenError) {
+      console.error('GitHub token validation error:', tokenError.response?.data);
+      return res.status(401).json({
+        error: 'Invalid token',
+        message: 'Please reconnect your GitHub account'
+      });
+    }
+
+    // Obtener issues y PRs con milestone (que tienen fecha)
+    const issuesResponse = await axios.get(
+      'https://api.github.com/search/issues',
+      {
+        headers: {
+          'Authorization': `token ${accessToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        params: {
+          q: 'assignee:@me milestone:*',
+          per_page: 100
+        }
+      }
+    );
+
+    // Transformar a formato de eventos
+    const events = await Promise.all(issuesResponse.data.items.map(async item => {
+      // Obtener el milestone para la fecha
+      const milestoneUrl = item.milestone.url;
+      const milestoneResponse = await axios.get(milestoneUrl, {
+        headers: {
+          'Authorization': `token ${accessToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+
+      return {
+        id: `github-${item.id}`,
+        title: item.title,
+        description: item.body,
+        date: milestoneResponse.data.due_on,
+        status: item.state,
+        priority: getPriorityFromLabels(item.labels),
+        project: item.repository_url.split('/').slice(-1)[0],
+        url: item.html_url,
+        source: 'github',
+        type: item.pull_request ? 'pull-request' : 'issue'
+      };
+    }));
+
+    res.json(events);
+
+  } catch (error) {
+    console.error('Error fetching GitHub calendar events:', error.response?.data || error);
+    res.status(500).json({
+      error: 'Failed to fetch calendar events',
+      message: error.message
+    });
+  }
+});
+
+function getPriorityFromLabels(labels) {
+  const labelNames = labels.map(label => label.name.toLowerCase());
+  
+  if (labelNames.some(name => 
+    name.includes('high') || 
+    name.includes('urgent') || 
+    name.includes('priority/high') ||
+    name.includes('priority-high')
+  )) {
+    return 'high';
+  }
+  
+  if (labelNames.some(name => 
+    name.includes('low') || 
+    name.includes('minor') || 
+    name.includes('priority/low') ||
+    name.includes('priority-low')
+  )) {
+    return 'low';
+  }
+  
+  return 'medium';
+}
+
+
 module.exports = router;
