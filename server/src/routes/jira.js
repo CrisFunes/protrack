@@ -110,5 +110,54 @@ router.get('/projects', auth, async (req, res) => {
   }
 });
 
+router.get('/tasks', auth, async (req, res) => {
+  try {
+    const integration = await Integration.findOne({
+      userId: req.user.userId,
+      service: 'jira',
+      isConnected: true
+    });
+
+    if (!integration) {
+      return res.status(404).json({
+        error: 'Integration not found',
+        message: 'Please connect your Jira account first'
+      });
+    }
+
+    const { baseUrl, email, apiToken } = integration.credentials;
+
+    // Obtener issues asignadas al usuario
+    const response = await axios.get(`${baseUrl}/rest/api/3/search`, {
+      auth: { username: email, password: apiToken },
+      params: {
+        jql: 'assignee was not EMPTY ORDER BY updated DESC',
+        maxResults: 50,
+        fields: 'summary,status,priority,assignee,updated,project'
+      }
+    });
+
+    const tasks = response.data.issues.map(issue => ({
+      id: issue.id,
+      key: issue.key,
+      title: issue.fields.summary,
+      status: issue.fields.status.name,
+      priority: issue.fields.priority.name,
+      updated: issue.fields.updated,
+      project: issue.fields.project.name,
+      source: 'jira',
+      url: `${baseUrl}/browse/${issue.key}`
+    }));
+
+    res.json(tasks);
+
+  } catch (error) {
+    console.error('Error fetching Jira tasks:', error.response?.data || error);
+    res.status(500).json({
+      error: 'Failed to fetch tasks',
+      message: error.message
+    });
+  }
+});
 
 module.exports = router;

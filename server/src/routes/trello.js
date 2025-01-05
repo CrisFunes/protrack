@@ -128,4 +128,79 @@ router.get('/boards', auth, async (req, res) => {
   }
 });
 
+router.get('/cards', auth, async (req, res) => {
+  try {
+    const integration = await Integration.findOne({
+      userId: req.user.userId,
+      service: 'trello',
+      isConnected: true
+    });
+
+    if (!integration) {
+      return res.status(404).json({
+        error: 'Integration not found',
+        message: 'Please connect your Trello account first'
+      });
+    }
+
+    const { apiKey, token } = integration.credentials;
+
+    // Primero obtener los boards del usuario
+    const boardsResponse = await axios.get('https://api.trello.com/1/members/me/boards', {
+      params: {
+        key: apiKey,
+        token: token,
+        filter: 'open',
+        fields: 'id,name'
+      }
+    });
+
+    // Obtener las tarjetas de cada tablero
+    const tasks = [];
+    for (const board of boardsResponse.data) {
+      const cardsResponse = await axios.get(`https://api.trello.com/1/boards/${board.id}/cards`, {
+        params: {
+          key: apiKey,
+          token: token,
+          fields: 'id,name,desc,due,labels,url,idList'
+        }
+      });
+
+      // Obtener las listas del tablero para mapear los estados
+      const listsResponse = await axios.get(`https://api.trello.com/1/boards/${board.id}/lists`, {
+        params: {
+          key: apiKey,
+          token: token,
+          fields: 'id,name'
+        }
+      });
+
+      const listMap = Object.fromEntries(
+        listsResponse.data.map(list => [list.id, list.name])
+      );
+
+      tasks.push(...cardsResponse.data.map(card => ({
+        id: card.id,
+        title: card.name,
+        description: card.desc,
+        status: listMap[card.idList],
+        priority: card.labels.length > 0 ? card.labels[0].name : 'No Priority',
+        dueDate: card.due,
+        url: card.url,
+        project: board.name,
+        source: 'trello'
+      })));
+    }
+
+    res.json(tasks);
+
+  } catch (error) {
+    console.error('Error fetching Trello cards:', error.response?.data || error);
+    res.status(500).json({
+      error: 'Failed to fetch cards',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;
