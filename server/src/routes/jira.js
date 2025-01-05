@@ -49,14 +49,19 @@ router.post('/connect', auth, async (req, res) => {
 // Obtener proyectos de Jira
 router.get('/projects', auth, async (req, res) => {
   try {
+    console.log('Fetching Jira projects for user:', req.user.userId);
+
     const integration = await Integration.findOne({
-      userId: req.user.id,
+      userId: req.user.userId, // Usar userId del middleware auth
       service: 'jira',
       isConnected: true
     });
 
     if (!integration) {
-      return res.status(404).json({ error: 'Jira integration not found' });
+      return res.status(404).json({
+        error: 'Integration not found',
+        message: 'Please connect your Jira account first'
+      });
     }
 
     const { baseUrl, email, apiToken } = integration.credentials;
@@ -65,14 +70,45 @@ router.get('/projects', auth, async (req, res) => {
       auth: { username: email, password: apiToken }
     });
 
-    res.json(response.data);
+    // Transformar los proyectos al formato esperado
+    const projects = response.data.map(project => ({
+      id: project.id,
+      name: project.name,
+      key: project.key,
+      description: project.description || '',
+      avatarUrls: project.avatarUrls,
+      private: project.private || false,
+      source: 'jira'
+    }));
+
+    // Actualizar lastSync
+    await Integration.findByIdAndUpdate(integration._id, {
+      lastSync: new Date()
+    });
+
+    res.json(projects);
+
   } catch (error) {
-    console.error('Error fetching Jira projects:', error);
+    console.error('Error fetching Jira projects:', error.response?.data || error.message);
+    
+    if (error.response?.status === 401) {
+      await Integration.findOneAndUpdate(
+        { userId: req.user.userId, service: 'jira' },
+        { isConnected: false }
+      );
+      
+      return res.status(401).json({
+        error: 'Authentication failed',
+        message: 'Please reconnect your Jira account'
+      });
+    }
+
     res.status(500).json({
-      error: 'Failed to fetch Jira projects',
-      details: error.message
+      error: 'Failed to fetch projects',
+      message: error.message
     });
   }
 });
+
 
 module.exports = router;

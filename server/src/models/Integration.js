@@ -3,34 +3,46 @@ const mongoose = require('mongoose');
 const integrationSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true
+    required: true,
+    ref: 'User',
+    index: true // Añadir índice para mejor rendimiento
   },
   service: {
     type: String,
-    required: true
+    required: true,
+    enum: ['jira', 'trello', 'github', 'bitbucket']
   },
   credentials: {
-    type: Object,  // Cambiado de Map a Object para mejor manejo de credenciales
-    default: {}
+    type: mongoose.Schema.Types.Mixed,
+    required: true,
+    validate: {
+      validator: function(credentials) {
+        switch (this.service) {
+          case 'jira':
+            return credentials.baseUrl && credentials.email && credentials.apiToken;
+          case 'trello':
+            return credentials.apiKey && credentials.token;
+          default:
+            return true;
+        }
+      },
+      message: props => `Credenciales inválidas para el servicio ${props.value}`
+    }
   },
   isConnected: {
     type: Boolean,
     default: false
   },
-  lastSync: Date
+  lastSync: {
+    type: Date,
+    default: Date.now
+  }
 }, {
-  timestamps: true  // Agregar timestamps para mejor tracking
+  timestamps: true
 });
 
 // Índice compuesto para asegurar que no hay duplicados para el mismo usuario y servicio
 integrationSchema.index({ userId: 1, service: 1 }, { unique: true });
-
-// Método para ocultar credenciales sensibles en las respuestas
-integrationSchema.methods.toJSON = function() {
-  const obj = this.toObject();
-  delete obj.credentials;
-  return obj;
-};
 
 const Integration = mongoose.model('Integration', integrationSchema);
 

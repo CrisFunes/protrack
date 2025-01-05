@@ -2,7 +2,6 @@ const jwt = require('jsonwebtoken');
 
 const authMiddleware = async (req, res, next) => {
   try {
-    // Log para debugging
     console.log('Auth Headers:', req.headers);
     
     const authHeader = req.headers.authorization;
@@ -18,12 +17,12 @@ const authMiddleware = async (req, res, next) => {
 
     const token = parts[1];
 
-    // Verificar el token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     
-    // Agregar la información del usuario decodificada a req
+    // Asegurarse de que el userId esté disponible en req.user
     req.user = {
-      userId: decoded.userId // Cambiamos id por userId para mantener consistencia
+      userId: decoded.userId,
+      id: decoded.userId // Mantener compatibilidad con código existente
     };
 
     console.log('Auth successful for user:', req.user.userId);
