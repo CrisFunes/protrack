@@ -20,6 +20,15 @@ ProTrack is a comprehensive project management dashboard that integrates with po
 - **Customizable Reports**: Generate insights about your projects
 - **Secure Authentication**: Protected routes and secure API integration
 
+- ## 📊 Features Showcase
+
+### Unified Dashboard
+<div align="center">
+  <img src="docs/images/dashboard.gif" alt="Dashboard View" width="1519"/>
+</div>
+View all your project metrics in one place with real-time updates and interactive charts.
+
+
 ## 🚀 Quick Start with Google IDX
 
 This project is built to run seamlessly in Google IDX, making setup and deployment incredibly simple.
