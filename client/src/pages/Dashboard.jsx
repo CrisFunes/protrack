@@ -34,8 +34,8 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import TrelloIcon from '@mui/icons-material/ViewKanban';
-import JiraIcon from './JiraIcon';
-import BitbucketIcon from './BitbucketIcon';
+import JiraIcon from '../assets/JiraIcon';
+import BitbucketIcon from '../assets/BitbucketIcon';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   height: '100%',

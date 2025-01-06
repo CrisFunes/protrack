@@ -8,12 +8,12 @@ import Button from '@mui/material/Button';
 import Switch from '@mui/material/Switch';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
-import JiraIntegrationDialog from './JiraIntegrationDialog';
-import GitHubIntegrationDialog from './GitHubIntegrationDialog';
-import BitBucketIntegrationDialog from './BitBucketIntegrationDialog';
+import JiraIntegrationDialog from '../components/JiraIntegrationDialog';
+import GitHubIntegrationDialog from '../components/GitHubIntegrationDialog';
+import BitBucketIntegrationDialog from '../components/BitBucketIntegrationDialog';
+import TrelloIntegrationDialog from '../components/TrelloIntegrationDialog';
 import { Box, IconButton, Tooltip, Snackbar } from '@mui/material';
 import { Settings, Refresh } from '@mui/icons-material';
-import TrelloIntegrationDialog from './TrelloIntegrationDialog';
 
 const Integrations = () => {
   const location = useLocation();

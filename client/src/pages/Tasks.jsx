@@ -10,7 +10,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import { Link } from 'react-router-dom';
 import TrelloIcon from '@mui/icons-material/ViewKanban';
-import JiraIcon from './JiraIcon';  // Asegúrate de tener este componente
+import JiraIcon from '../assets/JiraIcon';  // Asegúrate de tener este componente
 import GitHubIcon from '@mui/icons-material/GitHub';
 import IconButton from '@mui/material/IconButton';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -20,7 +20,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
-import BitbucketIcon from './BitbucketIcon';
+import BitbucketIcon from '../assets/BitbucketIcon';
 
 const Tasks = () => {
   const [tasks, setTasks] = useState({

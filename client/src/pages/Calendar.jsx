@@ -21,8 +21,8 @@ import dayjs from 'dayjs';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import TrelloIcon from '@mui/icons-material/ViewKanban';
-import JiraIcon from './JiraIcon';
-import BitbucketIcon from './BitbucketIcon';
+import JiraIcon from '../assets/JiraIcon';
+import BitbucketIcon from '../assets/BitbucketIcon';
 
 // Componente personalizado para los días del calendario
 function ServerDay(props) {
