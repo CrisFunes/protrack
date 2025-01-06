@@ -27,7 +27,7 @@ This project is built to run seamlessly in Google IDX, making setup and deployme
 1. **Open in IDX**:
    ```bash
    # Clone the repository
-   git clone https://github.com/yourusername/protrack.git
+   git clone https://github.com/CrisFunes/protrack.git
    ```
    Then open the project in IDX workspace.
 
@@ -61,7 +61,7 @@ This project is built to run seamlessly in Google IDX, making setup and deployme
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/yourusername/protrack.git
+   git clone https://github.com/CrisFunes/protrack.git
    cd protrack
    ```
 
@@ -153,9 +153,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 If you have any questions or need help, please:
-1. Check the [Issues](https://github.com/yourusername/protrack/issues) page
+1. Check the [Issues](https://github.com/CrisFunes/protrack/issues) page
 2. Create a new issue if your problem isn't already listed
 3. Reach out to the maintainers
 
 ---
-Made with ❤️ by [Your Name]
+Made with ❤️ by Cris Funes
