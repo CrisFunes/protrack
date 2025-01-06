@@ -361,5 +361,106 @@ function getPriorityFromLabels(labels) {
   return 'medium';
 }
 
+// En github.js
+router.get('/stats', auth, async (req, res) => {
+  try {
+    const integration = await Integration.findOne({
+      userId: req.user.userId,
+      service: 'github',
+      isConnected: true
+    });
+
+    if (!integration) {
+      return res.status(404).json({
+        error: 'Integration not found',
+        message: 'Please connect your GitHub account first'
+      });
+    }
+
+    const { accessToken } = integration.credentials;
+
+    // Obtener el usuario actual
+    const userResponse = await axios.get('https://api.github.com/user', {
+      headers: {
+        'Authorization': `token ${accessToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+
+    const username = userResponse.data.login;
+
+    // Obtener repositorios del usuario
+    const reposResponse = await axios.get('https://api.github.com/user/repos', {
+      headers: {
+        'Authorization': `token ${accessToken}`,
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      params: {
+        sort: 'updated',
+        per_page: 10
+      }
+    });
+
+    // Obtener commits recientes de los repositorios
+    const recentCommits = [];
+    const commitsByAuthor = new Map();
+
+    for (const repo of reposResponse.data.slice(0, 5)) { // Limitar a 5 repos para evitar demasiadas peticiones
+      const commitsResponse = await axios.get(
+        `https://api.github.com/repos/${repo.full_name}/commits`,
+        {
+          headers: {
+            'Authorization': `token ${accessToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          },
+          params: {
+            per_page: 10
+          }
+        }
+      );
+
+      for (const commit of commitsResponse.data) {
+        // Agregar a commits recientes
+        recentCommits.push({
+          id: commit.sha,
+          message: commit.commit.message,
+          date: commit.commit.author.date,
+          author: commit.commit.author.name,
+          repository: repo.name,
+          url: commit.html_url
+        });
+
+        // Contar commits por autor
+        const author = commit.commit.author.name;
+        commitsByAuthor.set(author, (commitsByAuthor.get(author) || 0) + 1);
+      }
+    }
+
+    // Formatear datos para la respuesta
+    const stats = {
+      commits: {
+        total: recentCommits.length,
+        byAuthor: Array.from(commitsByAuthor.entries()).map(([name, commits]) => ({
+          name,
+          commits
+        })),
+        recent: recentCommits
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 5)
+      },
+      repositories: reposResponse.data.length
+    };
+
+    res.json(stats);
+
+  } catch (error) {
+    console.error('Error fetching GitHub stats:', error.response?.data || error);
+    res.status(500).json({
+      error: 'Failed to fetch stats',
+      message: error.message,
+      details: error.response?.data
+    });
+  }
+});
 
 module.exports = router;

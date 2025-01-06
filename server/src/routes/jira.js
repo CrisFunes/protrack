@@ -210,4 +210,127 @@ router.get('/calendar-events', auth, async (req, res) => {
   }
 });
 
+// En jira.js
+router.get('/stats', auth, async (req, res) => {
+  try {
+    console.log('Fetching Jira stats for user:', req.user.userId);
+
+    const integration = await Integration.findOne({
+      userId: req.user.userId,
+      service: 'jira',
+      isConnected: true
+    });
+
+    console.log('Found Jira integration:', !!integration);
+
+    if (!integration) {
+      return res.status(404).json({
+        error: 'Integration not found',
+        message: 'Please connect your Jira account first'
+      });
+    }
+
+    const { baseUrl, email, apiToken } = integration.credentials;
+
+    // Verificar que tenemos todas las credenciales necesarias
+    if (!baseUrl || !email || !apiToken) {
+      console.error('Missing Jira credentials:', { hasBaseUrl: !!baseUrl, hasEmail: !!email, hasApiToken: !!apiToken });
+      return res.status(400).json({
+        error: 'Invalid credentials',
+        message: 'Missing required Jira credentials'
+      });
+    }
+
+    // Primero verificar que podemos conectarnos a Jira
+    try {
+      await axios.get(`${baseUrl}/rest/api/3/myself`, {
+        auth: { username: email, password: apiToken }
+      });
+      console.log('Jira connection verified successfully');
+    } catch (authError) {
+      console.error('Jira authentication failed:', authError.response?.data);
+      return res.status(401).json({
+        error: 'Authentication failed',
+        message: 'Failed to authenticate with Jira'
+      });
+    }
+
+    // Obtener todas las issues asignadas al usuario
+    const response = await axios.get(`${baseUrl}/rest/api/3/search`, {
+      auth: { username: email, password: apiToken },
+      params: {
+        jql: 'assignee was not EMPTY ORDER BY updated DESC',
+        fields: 'summary,status,priority,assignee,updated,project,issuetype'
+      }
+    });
+
+    const issues = response.data.issues;
+    console.log(`Found ${issues.length} Jira issues`);
+
+    // Normalizar estados
+    const normalizeStatus = (status) => {
+      const statusKey = status.statusCategory.key.toLowerCase();
+      if (statusKey === 'new') return 'todo';
+      if (statusKey === 'indeterminate') return 'inProgress';
+      if (statusKey === 'done') return 'done';
+      return 'other';
+    };
+
+    // Normalizar prioridad
+    const normalizePriority = (priority) => {
+      const priorityId = parseInt(priority.id);
+      if (priorityId <= 2) return 'high';
+      if (priorityId === 3) return 'medium';
+      return 'low';
+    };
+
+    // Calcular estadísticas
+    const stats = {
+      tasks: {
+        total: issues.length,
+        todo: issues.filter(i => normalizeStatus(i.fields.status) === 'todo').length,
+        inProgress: issues.filter(i => normalizeStatus(i.fields.status) === 'inProgress').length,
+        done: issues.filter(i => normalizeStatus(i.fields.status) === 'done').length,
+        byStatus: [
+          { name: 'To Do', value: issues.filter(i => normalizeStatus(i.fields.status) === 'todo').length },
+          { name: 'In Progress', value: issues.filter(i => normalizeStatus(i.fields.status) === 'inProgress').length },
+          { name: 'Done', value: issues.filter(i => normalizeStatus(i.fields.status) === 'done').length }
+        ],
+        byPriority: [
+          { name: 'High', value: issues.filter(i => normalizePriority(i.fields.priority) === 'high').length },
+          { name: 'Medium', value: issues.filter(i => normalizePriority(i.fields.priority) === 'medium').length },
+          { name: 'Low', value: issues.filter(i => normalizePriority(i.fields.priority) === 'low').length }
+        ]
+      },
+      recentActivities: issues
+        .slice(0, 5)
+        .map(issue => ({
+          id: issue.id,
+          description: issue.fields.summary,
+          type: issue.fields.issuetype.name,
+          date: issue.fields.updated,
+          source: 'jira',
+          project: issue.fields.project.name
+        }))
+    };
+
+    console.log('Successfully processed Jira stats');
+    res.json(stats);
+
+  } catch (error) {
+    console.error('Error fetching Jira stats:', {
+      message: error.message,
+      response: error.response?.data,
+      stack: error.stack
+    });
+
+    // Respuesta de error más detallada
+    res.status(500).json({
+      error: 'Failed to fetch Jira stats',
+      message: error.message,
+      details: error.response?.data || error.stack
+    });
+  }
+});
+
 module.exports = router;

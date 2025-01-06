@@ -293,5 +293,110 @@ function getPriorityFromLabels(labels) {
   return 'medium';
 }
 
+// En trello.js
+router.get('/stats', auth, async (req, res) => {
+  try {
+    const integration = await Integration.findOne({
+      userId: req.user.userId,
+      service: 'trello',
+      isConnected: true
+    });
+
+    if (!integration) {
+      return res.status(404).json({
+        error: 'Integration not found',
+        message: 'Please connect your Trello account first'
+      });
+    }
+
+    const { apiKey, token } = integration.credentials;
+
+    // Obtener tableros
+    const boardsResponse = await axios.get('https://api.trello.com/1/members/me/boards', {
+      params: {
+        key: apiKey,
+        token: token,
+        fields: 'name,url',
+        filter: 'open'
+      }
+    });
+
+    const cards = [];
+    const listsByBoard = new Map();
+
+    // Obtener listas y tarjetas de cada tablero
+    for (const board of boardsResponse.data) {
+      // Obtener listas del tablero
+      const listsResponse = await axios.get(`https://api.trello.com/1/boards/${board.id}/lists`, {
+        params: {
+          key: apiKey,
+          token: token,
+          fields: 'name,id'
+        }
+      });
+
+      listsByBoard.set(board.id, listsResponse.data);
+
+      // Obtener tarjetas del tablero
+      const cardsResponse = await axios.get(`https://api.trello.com/1/boards/${board.id}/cards`, {
+        params: {
+          key: apiKey,
+          token: token,
+          fields: 'name,idList,due,dueComplete,labels,dateLastActivity'
+        }
+      });
+
+      cards.push(...cardsResponse.data.map(card => ({
+        ...card,
+        boardName: board.name,
+        listName: listsResponse.data.find(list => list.id === card.idList)?.name
+      })));
+    }
+
+    // Calcular estadísticas
+    const stats = {
+      cards: {
+        total: cards.length,
+        byList: Array.from(listsByBoard.values())
+          .flat()
+          .map(list => ({
+            name: list.name,
+            count: cards.filter(card => card.idList === list.id).length
+          })),
+        withDueDate: cards.filter(card => card.due).length,
+        overdue: cards.filter(card => card.due && !card.dueComplete && new Date(card.due) < new Date()).length,
+        completed: cards.filter(card => card.dueComplete).length
+      },
+      recentActivities: cards
+        .sort((a, b) => new Date(b.dateLastActivity) - new Date(a.dateLastActivity))
+        .slice(0, 5)
+        .map(card => ({
+          id: card.id,
+          description: card.name,
+          type: 'card',
+          date: card.dateLastActivity,
+          source: 'trello',
+          project: card.boardName,
+          status: card.dueComplete ? 'Completed' : card.due ? (new Date(card.due) < new Date() ? 'Overdue' : 'Pending') : 'No due date'
+        })),
+      boards: {
+        total: boardsResponse.data.length,
+        withActivity: boardsResponse.data.filter(board => 
+          cards.some(card => card.boardId === board.id)
+        ).length
+      }
+    };
+
+    res.json(stats);
+
+  } catch (error) {
+    console.error('Error fetching Trello stats:', error.response?.data || error);
+    res.status(500).json({
+      error: 'Failed to fetch stats',
+      message: error.message,
+      details: error.response?.data
+    });
+  }
+});
 
 module.exports = router;
