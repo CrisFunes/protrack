@@ -1,8 +1,11 @@
 # ProTrack - Project Management Dashboard
 
 [![Built with Google IDX](https://img.shields.io/badge/Built%20with-Google%20IDX-4285F4?style=flat-square&logo=google)](https://idx.google.com/)
+[![React Version](https://img.shields.io/badge/React-v18-61DAFB?style=flat-square&logo=react)](https://reactjs.org/)
 [![Node.js Version](https://img.shields.io/badge/Node.js-v20-339933?style=flat-square&logo=node.js)](https://nodejs.org/)
 [![MongoDB Version](https://img.shields.io/badge/MongoDB-v6.0-47A248?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
+[![Vite](https://img.shields.io/badge/Vite-Latest-646CFF?style=flat-square&logo=vite)](https://vitejs.dev/)
+[![Material-UI](https://img.shields.io/badge/MUI-v5-007FFF?style=flat-square&logo=mui)](https://mui.com/)
 
 ProTrack is a comprehensive project management dashboard that integrates with popular development tools like Jira, Trello, GitHub, and Bitbucket. It provides a centralized view of your project's progress, tasks, and development activities in real-time.
 
