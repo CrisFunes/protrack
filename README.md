@@ -28,6 +28,15 @@ ProTrack is a comprehensive project management dashboard that integrates with po
 </div>
 View all your project metrics in one place with real-time updates and interactive charts.
 
+## 🎨 Design
+
+ProTrack's user interface was crafted in Figma, focusing on user experience and modern design principles.
+
+<div align="center">
+  <a href="https://www.figma.com/proto/6Fq4YreMxYlTxEWoxhSWTv/Proyect-Management-Dashboard?node-id=0-1&t=wLJZpu7segmZeap3-1" target="_blank">
+    <img src="docs/images/figma.png" alt="Figma Design Preview" width="800"/>
+  </a>
+</div>
 
 ## 🚀 Quick Start with Google IDX
 
