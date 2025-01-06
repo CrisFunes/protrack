@@ -11,7 +11,7 @@ import Button from '@mui/material/Button';
 import { Link } from 'react-router-dom';
 import { Chip, Divider } from '@mui/material';
 import TrelloIcon from '@mui/icons-material/ViewKanban';
-import JiraIcon from './JiraIcon';
+import JiraIcon from '../assets/JiraIcon';
 
 const Projects = () => {
   const [projects, setProjects] = useState({
