@@ -90,13 +90,11 @@ const Dashboard = () => {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('No authentication token found');
 
-        console.log(`Fetching ${service} stats...`);
         const response = await fetch(`/api/integrations/${service}/stats`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.status === 404) {
-          console.log(`${service} integration not found`);
           return null;
         }
 
@@ -106,10 +104,8 @@ const Dashboard = () => {
         }
 
         const data = await response.json();
-        console.log(`${service} stats received:`, data);
         return data;
       } catch (error) {
-        console.error(`Error fetching ${service} stats:`, error);
         setError(prev => ({
           ...prev,
           [service]: error.message
@@ -125,13 +121,6 @@ const Dashboard = () => {
         fetchServiceStats('trello'),
         fetchServiceStats('bitbucket')
       ]);
-
-      console.log('All stats fetched:', {
-        jira: jiraStats.status === 'fulfilled' ? 'success' : 'failed',
-        github: githubStats.status === 'fulfilled' ? 'success' : 'failed',
-        trello: trelloStats.status === 'fulfilled' ? 'success' : 'failed',
-        bitbucket: bitbucketStats.status === 'fulfilled' ? 'success' : 'failed'
-      });
 
       // Actualizar las estadísticas solo con los servicios que respondieron exitosamente
       setStats({
@@ -154,7 +143,6 @@ const Dashboard = () => {
         ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5)
       });
     } catch (error) {
-      console.error('Error in fetchDashboardData:', error);
       setError(prev => ({
         ...prev,
         general: error.message
