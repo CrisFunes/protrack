@@ -34,7 +34,7 @@ ProTrack's user interface was crafted in Figma, focusing on user experience and 
 
 <div align="center">
   <a href="https://www.figma.com/proto/6Fq4YreMxYlTxEWoxhSWTv/Proyect-Management-Dashboard?node-id=0-1&t=wLJZpu7segmZeap3-1" target="_blank">
-    <img src="docs/images/figma-preview" alt="Figma Design Preview" width="800"/>
+    <img src="docs/images/figma-preview.png" alt="Figma Design Preview" width="800"/>
   </a>
 </div>
 
