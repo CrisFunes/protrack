@@ -39,7 +39,7 @@ import BitbucketIcon from '../assets/BitbucketIcon';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   height: '100%',
-  maxHeight: '500px',
+  maxHeight: '480px',
   display: 'flex',
   flexDirection: 'column',
   transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
